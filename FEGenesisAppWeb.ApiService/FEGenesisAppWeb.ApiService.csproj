@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FEGenesisAppWeb.Core\FEGenesisAppWeb.Core.csproj" />
+    <ProjectReference Include="..\FEGenesisAppWeb.Models\FEGenesisAppWeb.Models.csproj" />
     <ProjectReference Include="..\FEGenesisAppWeb.ServiceDefaults\FEGenesisAppWeb.ServiceDefaults.csproj" />
   </ItemGroup>
 
@@ -16,6 +18,10 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
