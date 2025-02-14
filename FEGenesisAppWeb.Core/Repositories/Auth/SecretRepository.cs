@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FEGenesisAppWeb.Core.Repositories
+namespace FEGenesisAppWeb.Core.Repositories.Auth
 {
 
     public interface ISecretRepository

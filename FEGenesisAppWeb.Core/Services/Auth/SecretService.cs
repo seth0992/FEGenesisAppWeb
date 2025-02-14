@@ -1,4 +1,4 @@
-﻿using FEGenesisAppWeb.Core.Repositories;
+﻿using FEGenesisAppWeb.Core.Repositories.Auth;
 using FEGenesisAppWeb.Models.Entities.Security;
 using Microsoft.Extensions.Logging;
 using System;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FEGenesisAppWeb.Core.Services
+namespace FEGenesisAppWeb.Core.Services.Auth
 {
     /// <summary>
     /// Interfaz del servicio de gestión de secretos

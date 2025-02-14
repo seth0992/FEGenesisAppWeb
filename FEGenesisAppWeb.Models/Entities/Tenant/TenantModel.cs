@@ -20,20 +20,10 @@ namespace FEGenesisAppWeb.Models.Entities.Tenant
         public string? Address { get; set; }
         public byte[]? Logo { get; set; }
 
-        // Nuevas propiedades de suscripción
-        public long? SubscriptionTypeId { get; set; }
-        public DateTime? SubscriptionStartDate { get; set; }
-        public DateTime? SubscriptionEndDate { get; set; }
-        public bool IsTrialPeriod { get; set; }
-        public decimal? SubscriptionAmount { get; set; }
-        public string? PaymentMethod { get; set; }
-        public string? PaymentStatus { get; set; }
 
         // Relaciones de navegación
-        public virtual SubscriptionTypeModel? SubscriptionType { get; set; }
         public virtual ICollection<UserModel> Users { get; set; } = new List<UserModel>();
         //public virtual ICollection<CustomerModel> Customers { get; set; } = new List<CustomerModel>();
-        public virtual ICollection<SubscriptionHistoryModel> SubscriptionHistory { get; set; } = new List<SubscriptionHistoryModel>();
-
+        
     }
 }

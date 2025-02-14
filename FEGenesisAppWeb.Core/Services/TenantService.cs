@@ -1,5 +1,6 @@
 ﻿using FEGenesisAppWeb.Database.Data;
 using FEGenesisAppWeb.Models.Entities.Tenant;
+using FEGenesisAppWeb.Models.Models.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
