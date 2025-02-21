@@ -1,4 +1,10 @@
-﻿using FEGenesisAppWeb.Models.Entities.Common;
+﻿using FEGenesisAppWeb.Models.Entities.Audit;
+using FEGenesisAppWeb.Models.Entities.Billing;
+using FEGenesisAppWeb.Models.Entities.Catalog;
+using FEGenesisAppWeb.Models.Entities.Common;
+using FEGenesisAppWeb.Models.Entities.Core;
+using FEGenesisAppWeb.Models.Entities.Notifications;
+using FEGenesisAppWeb.Models.Entities.Reports;
 using FEGenesisAppWeb.Models.Entities.Security;
 using FEGenesisAppWeb.Models.Entities.Tenant;
 using Microsoft.EntityFrameworkCore;
@@ -24,12 +30,50 @@ namespace FEGenesisAppWeb.Database.Data
             Database.EnsureCreated();
         }
 
+       
+     
+        // Core
+        public DbSet<TenantModel> Tenants { get; set; }
+        public DbSet<DigitalCertificateModel> DigitalCertificates { get; set; }
+        public DbSet<ApiConfigurationModel> ApiConfigurations { get; set; }
+
+        // Security
         public DbSet<UserModel> Users { get; set; }
         public DbSet<RoleModel> Roles { get; set; }
-        public DbSet<TenantModel> Tenants { get; set; }
         public DbSet<RefreshTokenModel> RefreshTokens { get; set; }
-        public DbSet<SecurityLogModel> SecurityLogs { get; set; }
         public DbSet<SecretModel> Secrets { get; set; }
+
+        // Catalog
+        public DbSet<RegionModel> Regions { get; set; }
+        public DbSet<ProvinceModel> Provinces { get; set; }
+        public DbSet<CantonModel> Cantons { get; set; }
+        public DbSet<DistrictModel> Districts { get; set; }
+        public DbSet<DocumentTypeModel> DocumentTypes { get; set; }
+        public DbSet<TaxTypeModel> TaxTypes { get; set; }
+        public DbSet<PaymentMethodModel> PaymentMethods { get; set; }
+        public DbSet<ProductModel> Products { get; set; }
+        public DbSet<IdentificationTypeModel> IdentificationTypes { get; set; }
+
+        // Billing
+        public DbSet<CustomerModel> Customers { get; set; }
+        public DbSet<CustomerExonerationModel> CustomerExonerations { get; set; }
+        public DbSet<InvoiceModel> Invoices { get; set; }
+        public DbSet<InvoiceLineModel> InvoiceLines { get; set; }
+        public DbSet<InvoiceStatusModel> InvoiceStatuses { get; set; }
+
+        // Reports
+        public DbSet<ReportConfigurationModel> ReportConfigurations { get; set; }
+        public DbSet<GeneratedReportModel> GeneratedReports { get; set; }
+
+        // Notifications
+        public DbSet<TemplateModel> NotificationTemplates { get; set; }
+        public DbSet<NotificationModel> Notifications { get; set; }
+        public DbSet<NotificationDeliveryModel> NotificationDeliveries { get; set; }
+
+        // Audit
+        public DbSet<ActivityLogModel> ActivityLogs { get; set; }
+        // public DbSet<SecurityLogModel> SecurityLogs { get; set; }
+        public DbSet<SecurityLogModel> SecurityLogs { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
