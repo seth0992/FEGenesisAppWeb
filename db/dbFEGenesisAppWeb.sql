@@ -114,9 +114,11 @@ CREATE TABLE Security.Users (
     IsActive BIT DEFAULT 1,
     CreatedAt DATETIME DEFAULT GETDATE(),
     UpdatedAt DATETIME,
+    LastSuccessfulLogin DATETIME NULL,
     FOREIGN KEY (TenantId) REFERENCES Core.Tenants(ID),
     FOREIGN KEY (RoleId) REFERENCES Security.Roles(ID)
 );
+
 
 CREATE TABLE Security.RefreshTokens (
     ID BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -235,23 +237,25 @@ CREATE TABLE Catalog.Districts(
 CREATE TABLE Billing.Customers (
     ID BIGINT IDENTITY(1,1) PRIMARY KEY,
     TenantId BIGINT NOT NULL,
-    Name NVARCHAR(255) NOT NULL,
+    CustomerName NVARCHAR(255) NOT NULL,
     CommercialName NVARCHAR(255),
     IdentificationTypeId NVARCHAR(3) NOT NULL,
     Identification NVARCHAR(50) NOT NULL,
     Email NVARCHAR(255),
+    PhoneCode NVARCHAR(10),
     Phone NVARCHAR(20),
     Address NVARCHAR(500),
-    Province NVARCHAR(50),
-    Canton NVARCHAR(50),
-    District NVARCHAR(50),
+    Neighborhood NVARCHAR(250),
+    DistrictID INT,
     PaymentTerm INT DEFAULT 0,
     IsActive BIT DEFAULT 1,
     CreatedAt DATETIME DEFAULT GETDATE(),
     UpdatedAt DATETIME,
     FOREIGN KEY (TenantId) REFERENCES Core.Tenants(ID),
-    FOREIGN KEY (IdentificationTypeId) REFERENCES Catalog.IdentificationTypes(ID)
+    FOREIGN KEY (IdentificationTypeId) REFERENCES Catalog.IdentificationTypes(ID),
+    FOREIGN KEY (DistrictID) REFERENCES Catalog.Districts(DistrictID)
 );
+
 
 CREATE TABLE Billing.CustomerExonerations (
     ID BIGINT IDENTITY(1,1) PRIMARY KEY,
