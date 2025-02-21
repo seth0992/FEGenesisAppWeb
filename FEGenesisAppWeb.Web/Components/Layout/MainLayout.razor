@@ -1,6 +1,6 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
+@* <div class="page">
     <div class="sidebar">
         <NavMenu />
     </div>
@@ -15,9 +15,49 @@
         </article>
     </main>
 </div>
+ *@
+
+<RadzenLayout>
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+            <RadzenSidebarToggle Click="@(() => sidebar1Expanded = !sidebar1Expanded)" />
+            <RadzenLabel Text="GenesisFE Web" />
+        </RadzenStack>
+    </RadzenHeader>
+    <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="/" />
+            <RadzenPanelMenuItem Text="Facturación" Icon="receipt">
+                <RadzenPanelMenuItem Text="Nueva Factura" Path="/facturacion/nueva" Icon="add" />
+                <RadzenPanelMenuItem Text="Listado de Facturas" Path="/facturacion/listado" Icon="list" />
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Clientes" Icon="people">
+                <RadzenPanelMenuItem Text="Nuevo Cliente" Path="/clientes/nuevo" Icon="person_add" />
+                <RadzenPanelMenuItem Text="Listado de Clientes" Path="/clientes/listado" Icon="list" />
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Productos" Icon="inventory">
+                <RadzenPanelMenuItem Text="Nuevo Producto" Path="/productos/nuevo" Icon="add" />
+                <RadzenPanelMenuItem Text="Listado de Productos" Path="/productos/listado" Icon="list" />
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Reportes" Icon="assessment" Path="/reportes" />
+            <RadzenPanelMenuItem Text="Configuración" Icon="settings" Path="/configuracion" />
+        </RadzenPanelMenu>
+    </RadzenSidebar>
+    <RadzenBody>
+        <div class="container-fluid">
+            @Body
+        </div>
+    </RadzenBody>
+</RadzenLayout>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    bool sidebar1Expanded = true;
+}
+
+

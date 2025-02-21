@@ -1,0 +1,51 @@
+﻿@* Dashboard.razor *@
+@page "/"
+
+<RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Dashboard</RadzenText>
+
+<RadzenRow Gap="1rem" Class="mt-4">
+    <RadzenColumn Size="12" SizeMD="3">
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.H6">Facturas Emitidas</RadzenText>
+            <RadzenText TextStyle="TextStyle.H4">125</RadzenText>
+            <RadzenChart>
+                <RadzenLineSeries Data=@facturasPorDia ValueProperty="Cantidad" CategoryProperty="Fecha" />
+            </RadzenChart>
+        </RadzenCard>
+    </RadzenColumn>
+    <RadzenColumn Size="12" SizeMD="3">
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.H6">Monto Total</RadzenText>
+            <RadzenText TextStyle="TextStyle.H4">₡2,500,000</RadzenText>
+        </RadzenCard>
+    </RadzenColumn>
+    <RadzenColumn Size="12" SizeMD="3">
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.H6">Facturas Pendientes</RadzenText>
+            <RadzenText TextStyle="TextStyle.H4">5</RadzenText>
+        </RadzenCard>
+    </RadzenColumn>
+    <RadzenColumn Size="12" SizeMD="3">
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.H6">Facturas Rechazadas</RadzenText>
+            <RadzenText TextStyle="TextStyle.H4">2</RadzenText>
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    private List<DashboardData> facturasPorDia = new List<DashboardData>
+    {
+        new DashboardData { Fecha = "Lun", Cantidad = 10 },
+        new DashboardData { Fecha = "Mar", Cantidad = 15 },
+        new DashboardData { Fecha = "Mie", Cantidad = 20 },
+        new DashboardData { Fecha = "Jue", Cantidad = 18 },
+        new DashboardData { Fecha = "Vie", Cantidad = 25 }
+    };
+
+    public class DashboardData
+    {
+        public string Fecha { get; set; }
+        public int Cantidad { get; set; }
+    }
+}
