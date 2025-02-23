@@ -1,56 +1,51 @@
 ﻿@using FEGenesisAppWeb.Models.Models.Billing
-@inject NavigationManager NavigationManager
-@inject IJSRuntime JSRuntime
+@inject DialogService DialogService
 @inject IToastService ToastService
 
-<RadzenDialog>
-    <DialogContent>
-        <RadzenStack Gap="1rem">
-            <!-- Barra de búsqueda -->
-            <RadzenTextBox Placeholder="Buscar por nombre o identificación..." 
-                         @bind-Value=@searchText Change=@(args => Search()) Style="width: 100%;" />
+<div class="container-fluid">
+    <RadzenStack Gap="1rem">
+        <!-- Barra de búsqueda -->
+        <RadzenTextBox Placeholder="Buscar por nombre o identificación..."
+                       @bind-Value=@searchText Change=@(args => Search()) Style="width: 100%;" />
 
-            <!-- Tabla de clientes -->
-            <RadzenDataGrid @ref="clientsGrid" Data="@clients" TItem="ClientData" 
-                          AllowPaging="true" AllowSorting="true" PageSize="5"
-                          SelectionMode="DataGridSelectionMode.Single" 
-                          @bind-Value=@selectedClients>
-                <Columns>
-                    <RadzenDataGridColumn TItem="ClientData" Property="Name" Title="Nombre" />
-                    <RadzenDataGridColumn TItem="ClientData" Property="Identification" Title="Identificación">
-                        <Template Context="data">
-                            @($"{data.IdentificationType} - {data.Identification}")
-                        </Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="ClientData" Property="Email" Title="Correo" />
-                    <RadzenDataGridColumn TItem="ClientData" Property="Phone" Title="Teléfono">
-                        <Template Context="data">
-                            @($"{data.PhoneCode} {data.Phone}")
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
+        <!-- Tabla de clientes -->
+        <RadzenDataGrid @ref="clientsGrid" Data="@clients" TItem="ClientData"
+                        AllowPaging="true" AllowSorting="true" PageSize="5"
+                        SelectionMode="DataGridSelectionMode.Single"
+                        @bind-Value=@selectedClients>
+            <Columns>
+                <RadzenDataGridColumn TItem="ClientData" Property="Name" Title="Nombre" />
+                <RadzenDataGridColumn TItem="ClientData" Property="Identification" Title="Identificación">
+                    <Template Context="data">
+                        @($"{data.IdentificationType} - {data.Identification}")
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ClientData" Property="Email" Title="Correo" />
+                <RadzenDataGridColumn TItem="ClientData" Property="Phone" Title="Teléfono">
+                    <Template Context="data">
+                        @($"{data.PhoneCode} {data.Phone}")
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
 
-            <!-- Botones -->
-            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
-                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click=@(() => dialog.Close(false)) />
-                <RadzenButton Text="Seleccionar" ButtonStyle="ButtonStyle.Primary" 
-                            Click=@SelectClient Disabled=@(selectedClients.Count == 0) />
-            </RadzenStack>
+        <!-- Botones -->
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click=@Cancel />
+            <RadzenButton Text="Seleccionar" ButtonStyle="ButtonStyle.Primary"
+                          Click=@SelectClient Disabled=@(selectedClients.Count == 0) />
         </RadzenStack>
-    </DialogContent>
-</RadzenDialog>
+    </RadzenStack>
+</div>
 
 @code {
     [Parameter]
     public EventCallback<ClientData> OnClientSelected { get; set; }
 
-
     private RadzenDataGrid<ClientData> clientsGrid;
     private IList<ClientData> selectedClients = new List<ClientData>();
     private string searchText = "";
     private List<ClientData> clients = new();
-    private DialogService dialog;
 
     protected override void OnInitialized()
     {
@@ -59,12 +54,9 @@
 
     public async Task Show()
     {
-        dialog = new DialogService(NavigationManager, JSRuntime);
-        await dialog.OpenAsync("Seleccionar Cliente", ds =>
-        {
-            dialog = ds;
-            return builder => builder.AddContent(0, this);
-        }, new DialogOptions { Width = "800px", Height = "500px" });
+        var result = await DialogService.OpenAsync<ClientDialog>("Seleccionar Cliente",
+            new Dictionary<string, object>() { { "OnClientSelected", OnClientSelected } },
+            new DialogOptions() { Width = "800px", Height = "500px" });
     }
 
     private void LoadClients()
@@ -72,19 +64,29 @@
         // Datos de prueba
         clients = new List<ClientData>
         {
-            new() { Id = 1, Name = "Empresa A S.A.", IdentificationType = "02", Identification = "3101123456", 
+            new() { Id = 1, Name = "Empresa A S.A.", IdentificationType = "02", Identification = "3101123456",
                    Email = "info@empresaa.com", PhoneCode = "+506", Phone = "2222-1111" },
-            new() { Id = 2, Name = "Juan Pérez", IdentificationType = "01", Identification = "108230456", 
+            new() { Id = 2, Name = "Juan Pérez", IdentificationType = "01", Identification = "108230456",
                    Email = "juan@email.com", PhoneCode = "+506", Phone = "8888-8888" },
-            new() { Id = 3, Name = "María González", IdentificationType = "01", Identification = "204560789", 
+            new() { Id = 3, Name = "María González", IdentificationType = "01", Identification = "204560789",
                    Email = "maria@email.com", PhoneCode = "+506", Phone = "7777-7777" }
         };
     }
 
     private void Search()
     {
-        // Aquí implementaremos la búsqueda cuando tengamos la API
-        ToastService.ShowInfo("Implementar búsqueda con: " + searchText);
+        if (!string.IsNullOrEmpty(searchText))
+        {
+            clients = clients.Where(c =>
+                c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                c.Identification.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                c.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        else
+        {
+            LoadClients();
+        }
     }
 
     private async Task SelectClient()
@@ -92,13 +94,12 @@
         if (selectedClients.Count > 0)
         {
             await OnClientSelected.InvokeAsync(selectedClients.First());
-            dialog.Close(false);
+            DialogService.Close(selectedClients.First());
         }
     }
 
-    private void SelectClient(ClientData client)
+    private void Cancel()
     {
-        OnClientSelected.InvokeAsync(client);
+        DialogService.Close();
     }
-
 }

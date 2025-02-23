@@ -1,8 +1,10 @@
 ﻿@page "/facturacion/nueva"
 @page "/facturacion/editar/{Id:int}"
 @using FEGenesisAppWeb.Models.Models.Billing
+@using FEGenesisAppWeb.Models.Entities.Catalog
 @inject NavigationManager NavigationManager
 @inject IToastService ToastService
+@inject DialogService DialogService
 
 <PageTitle>@(Id == null ? "Nueva Factura" : "Editar Factura") - GenesisFE</PageTitle>
 
@@ -144,7 +146,7 @@
                                        AlignItems="AlignItems.Center">
                                 <RadzenText TextStyle="TextStyle.H6">Líneas de Factura</RadzenText>
                                 <RadzenButton Icon="add" Text="Agregar Línea" ButtonStyle="ButtonStyle.Secondary"
-                                            Click=@(() => OpenLineDialog()) Disabled=@(model.ClientId == 0) />
+                                            Click=@OpenLineDialog Disabled=@(model.ClientId == 0) />
                             </RadzenStack>
                         </RadzenColumn>
 
@@ -245,13 +247,6 @@
     </RadzenTemplateForm>
 </div>
 
-@* Diálogos modales *@
-<ClientDialog @ref="clientDialog"
-              OnClientSelected="EventCallback.Factory.Create<ClientData>(this, OnClientSelected)" />
-<LineDialog @ref="lineDialog"
-            OnLineAdded="EventCallback.Factory.Create<InvoiceLine>(this, OnLineAdded)"
-            SelectedClient="selectedClient" />
-
 @code {
     [Parameter]
     public int? Id { get; set; }
@@ -259,8 +254,6 @@
     private InvoiceFormModel model = new();
     private ClientData selectedClient = new();
     private RadzenDataGrid<InvoiceLine> linesGrid;
-    private ClientDialog clientDialog;
-    private LineDialog lineDialog;
     private bool isSaving;
 
     // Catálogos
@@ -391,7 +384,15 @@
 
     private async Task OpenClientDialog()
     {
-        await clientDialog.Show();
+        var result = await DialogService.OpenAsync<ClientDialog>("Seleccionar Cliente",
+            new Dictionary<string, object>() { { "OnClientSelected", EventCallback.Factory.Create<ClientData>(this, OnClientSelected) } },
+            new DialogOptions() { Width = "800px", Height = "500px" });
+
+        if (result != null)
+        {
+            var client = (ClientData)result;
+            OnClientSelected(client);
+        }
     }
 
     private void OnClientSelected(ClientData client)
@@ -416,7 +417,13 @@
             return;
         }
 
-        await lineDialog.Show();
+        var result = await DialogService.OpenAsync<LineDialog>("Agregar Línea",
+            new Dictionary<string, object>() 
+            { 
+                { "OnLineAdded", EventCallback.Factory.Create<InvoiceLine>(this, OnLineAdded) },
+                { "SelectedClient", selectedClient }
+            },
+            new DialogOptions() { Width = "900px", Height = "700px" });
     }
 
     private void OnLineAdded(InvoiceLine line)

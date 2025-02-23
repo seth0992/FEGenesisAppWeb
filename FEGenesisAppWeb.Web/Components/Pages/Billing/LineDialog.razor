@@ -1,169 +1,167 @@
 ﻿@using FEGenesisAppWeb.Models.Models.Billing
-
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @inject IToastService ToastService
+@inject DialogService DialogService
 
-<RadzenDialog>
-    <DialogContent>
-        <RadzenTemplateForm TItem="InvoiceLine" Data=@model Submit=@OnSubmit>
-            <RadzenStack Gap="1rem">
-                <!-- Selección de Producto -->
-                <RadzenStack>
-                    <RadzenLabel Text="Producto/Servicio" />
-                    <RadzenRow>
-                        <RadzenColumn Size="10">
-                            <RadzenAutoComplete @bind-Value=@model.Description LoadData=@OnLoadData
-                                              TextProperty="Description" ValueProperty="Description"
-                                              Data=@productsFiltered Change=@OnProductSelected
-                                              Class="w-100" />
-                        </RadzenColumn>
-                        <RadzenColumn Size="2">
-                            <RadzenButton Icon="search" ButtonStyle="ButtonStyle.Secondary" 
-                                        Click=@OpenProductDialog />
-                        </RadzenColumn>
-                    </RadzenRow>
-                </RadzenStack>
-
+<div class="container">
+    <RadzenTemplateForm TItem="InvoiceLine" Data=@model Submit=@OnSubmit>
+        <RadzenStack Gap="1rem">
+            <!-- Selección de Producto -->
+            <RadzenStack>
+                <RadzenLabel Text="Producto/Servicio" />
                 <RadzenRow>
-                    <!-- Código -->
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenStack>
-                            <RadzenLabel Text="Código" />
-                            <RadzenTextBox @bind-Value=@model.Code Class="w-100" Disabled="true" />
-                        </RadzenStack>
+                    <RadzenColumn Size="10">
+                        <RadzenAutoComplete @bind-Value=@model.Description LoadData=@OnLoadData
+                                          TextProperty="Description" ValueProperty="Description"
+                                          Data=@productsFiltered Change=@OnProductSelected
+                                          Class="w-100" />
                     </RadzenColumn>
-
-                    <!-- Código CAByS -->
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenStack>
-                            <RadzenLabel Text="Código CAByS" />
-                            <RadzenTextBox @bind-Value=@model.CabysCode Class="w-100" Disabled="true" />
-                        </RadzenStack>
+                    <RadzenColumn Size="2">
+                        <RadzenButton Icon="search" ButtonStyle="ButtonStyle.Secondary" 
+                                    Click=@OpenProductDialog />
                     </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
 
-                    <!-- Cantidad -->
+            <RadzenRow>
+                <!-- Código -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack>
+                        <RadzenLabel Text="Código" />
+                        <RadzenTextBox @bind-Value=@model.Code Class="w-100" Disabled="true" />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <!-- Código CAByS -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack>
+                        <RadzenLabel Text="Código CAByS" />
+                        <RadzenTextBox @bind-Value=@model.CabysCode Class="w-100" Disabled="true" />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <!-- Cantidad -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack>
+                        <RadzenLabel Text="Cantidad" />
+                        <RadzenNumeric @bind-Value=@model.Quantity TValue="decimal" 
+                                     Change=@CalculateTotals Format="0.00" Min="1" 
+                                     Class="w-100" />
+                        <RadzenRequiredValidator Component="Quantity" 
+                            Text="La cantidad es requerida y debe ser mayor a 0" />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <!-- Precio Unitario -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack>
+                        <RadzenLabel Text="Precio Unitario" />
+                        <RadzenNumeric @bind-Value=@model.UnitPrice TValue="decimal" 
+                                     Change=@CalculateTotals Format="0.00" Min="0" 
+                                     Class="w-100" />
+                        <RadzenRequiredValidator Component="UnitPrice" 
+                            Text="El precio unitario es requerido" />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <!-- Descuento -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack>
+                        <RadzenLabel Text="Descuento %" />
+                        <RadzenNumeric @bind-Value=@model.DiscountPercentage TValue="decimal"
+                                     Change=@CalculateTotals Format="0.00" Min="0" Max="100" 
+                                     Class="w-100" />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <!-- Naturaleza del Descuento -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack>
+                        <RadzenLabel Text="Naturaleza del Descuento" />
+                        <RadzenTextBox @bind-Value=@model.DiscountReason Class="w-100" 
+                                     Disabled=@(model.DiscountPercentage == 0) />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <!-- Tipo de Impuesto -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack>
+                        <RadzenLabel Text="Tipo de Impuesto" />
+                        <RadzenDropDown @bind-Value=@model.TaxCode Data=@taxTypes
+                                      TextProperty="Name" ValueProperty="Code"
+                                      Change=@OnTaxTypeChanged Class="w-100" />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <!-- Tarifa de Impuesto -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack>
+                        <RadzenLabel Text="Tarifa" />
+                        <RadzenNumeric @bind-Value=@model.TaxRate TValue="decimal" 
+                                     Format="0.00" Disabled="true" Class="w-100" />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <!-- Exoneración -->
+                @if (showExoneration)
+                {
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenStack>
-                            <RadzenLabel Text="Cantidad" />
-                            <RadzenNumeric @bind-Value=@model.Quantity TValue="decimal" 
-                                         Change=@CalculateTotals Format="0.00" Min="1" 
-                                         Class="w-100" />
-                            <RadzenRequiredValidator Component="Quantity" 
-                                Text="La cantidad es requerida y debe ser mayor a 0" />
-                        </RadzenStack>
-                    </RadzenColumn>
-
-                    <!-- Precio Unitario -->
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenStack>
-                            <RadzenLabel Text="Precio Unitario" />
-                            <RadzenNumeric @bind-Value=@model.UnitPrice TValue="decimal" 
-                                         Change=@CalculateTotals Format="0.00" Min="0" 
-                                         Class="w-100" />
-                            <RadzenRequiredValidator Component="UnitPrice" 
-                                Text="El precio unitario es requerido" />
-                        </RadzenStack>
-                    </RadzenColumn>
-
-                    <!-- Descuento -->
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenStack>
-                            <RadzenLabel Text="Descuento %" />
-                            <RadzenNumeric @bind-Value=@model.DiscountPercentage TValue="decimal"
+                            <RadzenLabel Text="Porcentaje Exonerado" />
+                            <RadzenNumeric @bind-Value=@model.ExonerationPercentage TValue="decimal"
                                          Change=@CalculateTotals Format="0.00" Min="0" Max="100" 
                                          Class="w-100" />
                         </RadzenStack>
                     </RadzenColumn>
 
-                    <!-- Naturaleza del Descuento -->
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenStack>
-                            <RadzenLabel Text="Naturaleza del Descuento" />
-                            <RadzenTextBox @bind-Value=@model.DiscountReason Class="w-100" 
-                                         Disabled=@(model.DiscountPercentage == 0) />
+                            <RadzenLabel Text="Documento Exoneración" />
+                            <RadzenDropDown @bind-Value=@model.ExonerationDocument 
+                                          Data=@SelectedClient?.Exonerations
+                                          TextProperty="DocumentNumber" ValueProperty="DocumentNumber"
+                                          Class="w-100" />
                         </RadzenStack>
                     </RadzenColumn>
+                }
+            </RadzenRow>
 
-                    <!-- Tipo de Impuesto -->
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenStack>
-                            <RadzenLabel Text="Tipo de Impuesto" />
-                            <RadzenDropDown @bind-Value=@model.TaxCode Data=@taxTypes
-                                          TextProperty="Name" ValueProperty="Code"
-                                          Change=@OnTaxTypeChanged Class="w-100" />
+            <!-- Totales -->
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenFieldset Text="Totales">
+                        <RadzenStack Gap="1rem">
+                            <div class="d-flex justify-content-between">
+                                <RadzenText TextStyle="TextStyle.Body1">SubTotal:</RadzenText>
+                                <RadzenText TextStyle="TextStyle.H6">@model.SubTotal.ToString("C2")</RadzenText>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <RadzenText TextStyle="TextStyle.Body1">Descuento:</RadzenText>
+                                <RadzenText TextStyle="TextStyle.H6">@model.DiscountAmount.ToString("C2")</RadzenText>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <RadzenText TextStyle="TextStyle.Body1">Impuesto:</RadzenText>
+                                <RadzenText TextStyle="TextStyle.H6">@model.TaxAmount.ToString("C2")</RadzenText>
+                            </div>
+                            <RadzenDivider />
+                            <div class="d-flex justify-content-between">
+                                <RadzenText TextStyle="TextStyle.H6">Total:</RadzenText>
+                                <RadzenText TextStyle="TextStyle.H5">@model.Total.ToString("C2")</RadzenText>
+                            </div>
                         </RadzenStack>
-                    </RadzenColumn>
+                    </RadzenFieldset>
+                </RadzenColumn>
+            </RadzenRow>
 
-                    <!-- Tarifa de Impuesto -->
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenStack>
-                            <RadzenLabel Text="Tarifa" />
-                            <RadzenNumeric @bind-Value=@model.TaxRate TValue="decimal" 
-                                         Format="0.00" Disabled="true" Class="w-100" />
-                        </RadzenStack>
-                    </RadzenColumn>
-
-                    <!-- Exoneración -->
-                    @if (showExoneration)
-                    {
-                        <RadzenColumn Size="12" SizeMD="6">
-                            <RadzenStack>
-                                <RadzenLabel Text="Porcentaje Exonerado" />
-                                <RadzenNumeric @bind-Value=@model.ExonerationPercentage TValue="decimal"
-                                             Change=@CalculateTotals Format="0.00" Min="0" Max="100" 
-                                             Class="w-100" />
-                            </RadzenStack>
-                        </RadzenColumn>
-
-                        <RadzenColumn Size="12" SizeMD="6">
-                            <RadzenStack>
-                                <RadzenLabel Text="Documento Exoneración" />
-                                <RadzenDropDown @bind-Value=@model.ExonerationDocument 
-                                              Data=@SelectedClient?.Exonerations
-                                              TextProperty="DocumentNumber" ValueProperty="DocumentNumber"
-                                              Class="w-100" />
-                            </RadzenStack>
-                        </RadzenColumn>
-                    }
-                </RadzenRow>
-
-                <!-- Totales -->
-                <RadzenRow>
-                    <RadzenColumn Size="12">
-                        <RadzenFieldset Text="Totales">
-                            <RadzenStack Gap="1rem">
-                                <div class="d-flex justify-content-between">
-                                    <RadzenText TextStyle="TextStyle.Body1">SubTotal:</RadzenText>
-                                    <RadzenText TextStyle="TextStyle.H6">@model.SubTotal.ToString("C2")</RadzenText>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <RadzenText TextStyle="TextStyle.Body1">Descuento:</RadzenText>
-                                    <RadzenText TextStyle="TextStyle.H6">@model.DiscountAmount.ToString("C2")</RadzenText>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <RadzenText TextStyle="TextStyle.Body1">Impuesto:</RadzenText>
-                                    <RadzenText TextStyle="TextStyle.H6">@model.TaxAmount.ToString("C2")</RadzenText>
-                                </div>
-                                <RadzenDivider />
-                                <div class="d-flex justify-content-between">
-                                    <RadzenText TextStyle="TextStyle.H6">Total:</RadzenText>
-                                    <RadzenText TextStyle="TextStyle.H5">@model.Total.ToString("C2")</RadzenText>
-                                </div>
-                            </RadzenStack>
-                        </RadzenFieldset>
-                    </RadzenColumn>
-                </RadzenRow>
-
-                <!-- Botones -->
-                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
-                    <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click=@(() => dialog.Close(false)) />
-                    <RadzenButton Text="Agregar" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" />
-                </RadzenStack>
+            <!-- Botones -->
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click=@(() => DialogService.Close(false)) />
+                <RadzenButton Text="Agregar" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" />
             </RadzenStack>
-        </RadzenTemplateForm>
-    </DialogContent>
-</RadzenDialog>
+        </RadzenStack>
+    </RadzenTemplateForm>
+</div>
 
 @code {
     [Parameter]
@@ -173,7 +171,6 @@
     public ClientData SelectedClient { get; set; }
 
     private InvoiceLine model = new();
-    private DialogService dialog;
     private bool showExoneration;
     private List<Product> products = new();
     private List<Product> productsFiltered = new();
@@ -187,10 +184,8 @@
 
     public async Task Show()
     {
-        dialog = new DialogService(NavigationManager, JSRuntime);
-        await dialog.OpenAsync("Agregar Línea", ds =>
+        await DialogService.OpenAsync("Agregar Línea", ds =>
         {
-            dialog = ds;
             return builder => builder.AddContent(0, this);
         }, new DialogOptions { Width = "900px", Height = "700px" });
     }
@@ -346,7 +341,6 @@
         }
 
         await OnLineAdded.InvokeAsync(model);
-        dialog.Close(false);
+        DialogService.Close(false);
     }
-
 }

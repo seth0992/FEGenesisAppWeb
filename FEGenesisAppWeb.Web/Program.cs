@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
-
+builder.Services.AddScoped<DialogService>();
 // Login & Authentication services
 builder.Services.AddAuthenticationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
