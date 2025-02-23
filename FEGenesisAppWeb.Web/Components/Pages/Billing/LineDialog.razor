@@ -1,0 +1,352 @@
+﻿@using FEGenesisAppWeb.Models.Models.Billing
+
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IToastService ToastService
+
+<RadzenDialog>
+    <DialogContent>
+        <RadzenTemplateForm TItem="InvoiceLine" Data=@model Submit=@OnSubmit>
+            <RadzenStack Gap="1rem">
+                <!-- Selección de Producto -->
+                <RadzenStack>
+                    <RadzenLabel Text="Producto/Servicio" />
+                    <RadzenRow>
+                        <RadzenColumn Size="10">
+                            <RadzenAutoComplete @bind-Value=@model.Description LoadData=@OnLoadData
+                                              TextProperty="Description" ValueProperty="Description"
+                                              Data=@productsFiltered Change=@OnProductSelected
+                                              Class="w-100" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="2">
+                            <RadzenButton Icon="search" ButtonStyle="ButtonStyle.Secondary" 
+                                        Click=@OpenProductDialog />
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+
+                <RadzenRow>
+                    <!-- Código -->
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack>
+                            <RadzenLabel Text="Código" />
+                            <RadzenTextBox @bind-Value=@model.Code Class="w-100" Disabled="true" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <!-- Código CAByS -->
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack>
+                            <RadzenLabel Text="Código CAByS" />
+                            <RadzenTextBox @bind-Value=@model.CabysCode Class="w-100" Disabled="true" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <!-- Cantidad -->
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack>
+                            <RadzenLabel Text="Cantidad" />
+                            <RadzenNumeric @bind-Value=@model.Quantity TValue="decimal" 
+                                         Change=@CalculateTotals Format="0.00" Min="1" 
+                                         Class="w-100" />
+                            <RadzenRequiredValidator Component="Quantity" 
+                                Text="La cantidad es requerida y debe ser mayor a 0" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <!-- Precio Unitario -->
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack>
+                            <RadzenLabel Text="Precio Unitario" />
+                            <RadzenNumeric @bind-Value=@model.UnitPrice TValue="decimal" 
+                                         Change=@CalculateTotals Format="0.00" Min="0" 
+                                         Class="w-100" />
+                            <RadzenRequiredValidator Component="UnitPrice" 
+                                Text="El precio unitario es requerido" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <!-- Descuento -->
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack>
+                            <RadzenLabel Text="Descuento %" />
+                            <RadzenNumeric @bind-Value=@model.DiscountPercentage TValue="decimal"
+                                         Change=@CalculateTotals Format="0.00" Min="0" Max="100" 
+                                         Class="w-100" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <!-- Naturaleza del Descuento -->
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack>
+                            <RadzenLabel Text="Naturaleza del Descuento" />
+                            <RadzenTextBox @bind-Value=@model.DiscountReason Class="w-100" 
+                                         Disabled=@(model.DiscountPercentage == 0) />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <!-- Tipo de Impuesto -->
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack>
+                            <RadzenLabel Text="Tipo de Impuesto" />
+                            <RadzenDropDown @bind-Value=@model.TaxCode Data=@taxTypes
+                                          TextProperty="Name" ValueProperty="Code"
+                                          Change=@OnTaxTypeChanged Class="w-100" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <!-- Tarifa de Impuesto -->
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack>
+                            <RadzenLabel Text="Tarifa" />
+                            <RadzenNumeric @bind-Value=@model.TaxRate TValue="decimal" 
+                                         Format="0.00" Disabled="true" Class="w-100" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <!-- Exoneración -->
+                    @if (showExoneration)
+                    {
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenStack>
+                                <RadzenLabel Text="Porcentaje Exonerado" />
+                                <RadzenNumeric @bind-Value=@model.ExonerationPercentage TValue="decimal"
+                                             Change=@CalculateTotals Format="0.00" Min="0" Max="100" 
+                                             Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <RadzenStack>
+                                <RadzenLabel Text="Documento Exoneración" />
+                                <RadzenDropDown @bind-Value=@model.ExonerationDocument 
+                                              Data=@SelectedClient?.Exonerations
+                                              TextProperty="DocumentNumber" ValueProperty="DocumentNumber"
+                                              Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    }
+                </RadzenRow>
+
+                <!-- Totales -->
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenFieldset Text="Totales">
+                            <RadzenStack Gap="1rem">
+                                <div class="d-flex justify-content-between">
+                                    <RadzenText TextStyle="TextStyle.Body1">SubTotal:</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.H6">@model.SubTotal.ToString("C2")</RadzenText>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <RadzenText TextStyle="TextStyle.Body1">Descuento:</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.H6">@model.DiscountAmount.ToString("C2")</RadzenText>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <RadzenText TextStyle="TextStyle.Body1">Impuesto:</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.H6">@model.TaxAmount.ToString("C2")</RadzenText>
+                                </div>
+                                <RadzenDivider />
+                                <div class="d-flex justify-content-between">
+                                    <RadzenText TextStyle="TextStyle.H6">Total:</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.H5">@model.Total.ToString("C2")</RadzenText>
+                                </div>
+                            </RadzenStack>
+                        </RadzenFieldset>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <!-- Botones -->
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                    <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click=@(() => dialog.Close(false)) />
+                    <RadzenButton Text="Agregar" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" />
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenTemplateForm>
+    </DialogContent>
+</RadzenDialog>
+
+@code {
+    [Parameter]
+    public EventCallback<InvoiceLine> OnLineAdded { get; set; }
+
+    [Parameter]
+    public ClientData SelectedClient { get; set; }
+
+    private InvoiceLine model = new();
+    private DialogService dialog;
+    private bool showExoneration;
+    private List<Product> products = new();
+    private List<Product> productsFiltered = new();
+    private List<TaxType> taxTypes = new();
+
+    protected override void OnInitialized()
+    {
+        LoadCatalogs();
+        InitializeModel();
+    }
+
+    public async Task Show()
+    {
+        dialog = new DialogService(NavigationManager, JSRuntime);
+        await dialog.OpenAsync("Agregar Línea", ds =>
+        {
+            dialog = ds;
+            return builder => builder.AddContent(0, this);
+        }, new DialogOptions { Width = "900px", Height = "700px" });
+    }
+
+    private void LoadCatalogs()
+    {
+        // Datos de prueba - Productos
+        products = new List<Product>
+        {
+            new() { Code = "001", CabysCode = "1234567890", Description = "Producto 1", 
+                   UnitPrice = 1000, TaxCode = "01", TaxRate = 13 },
+            new() { Code = "002", CabysCode = "0987654321", Description = "Servicio 1", 
+                   UnitPrice = 2000, TaxCode = "01", TaxRate = 13 },
+            new() { Code = "003", CabysCode = "5678901234", Description = "Producto 2", 
+                   UnitPrice = 3000, TaxCode = "08", TaxRate = 13 }
+        };
+
+        // Datos de prueba - Tipos de impuesto
+        taxTypes = new List<TaxType>
+        {
+            new() { Code = "01", Name = "IVA 13%", Rate = 13 },
+            new() { Code = "02", Name = "IVA 2%", Rate = 2 },
+            new() { Code = "03", Name = "IVA 1%", Rate = 1 },
+            new() { Code = "08", Name = "IVA 13% + Exoneración", Rate = 13, AllowsExoneration = true }
+        };
+    }
+
+    private void InitializeModel()
+    {
+        model = new InvoiceLine
+        {
+            Quantity = 1,
+            DiscountPercentage = 0,
+            TaxCode = "01", // IVA 13% por defecto
+            TaxRate = 13
+        };
+    }
+
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(args.Filter))
+            {
+                productsFiltered = products.Take(10).ToList();
+            }
+            else
+            {
+                productsFiltered = products.Where(p => 
+                    p.Description.Contains(args.Filter, StringComparison.OrdinalIgnoreCase) ||
+                    p.Code.Contains(args.Filter, StringComparison.OrdinalIgnoreCase))
+                    .Take(10)
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al cargar productos: " + ex.Message);
+        }
+    }
+
+    private void OnProductSelected(object value)
+    {
+        if (value == null) return;
+
+        var description = value.ToString();
+        var product = products.FirstOrDefault(p => p.Description == description);
+        if (product != null)
+        {
+            model.Code = product.Code;
+            model.CabysCode = product.CabysCode;
+            model.Description = product.Description;
+            model.UnitPrice = product.UnitPrice;
+            model.TaxCode = product.TaxCode;
+            model.TaxRate = product.TaxRate;
+            CalculateTotals();
+        }
+    }
+
+    private void OnTaxTypeChanged(object value)
+    {
+        if (value == null) return;
+
+        var taxCode = value.ToString();
+        var taxType = taxTypes.FirstOrDefault(t => t.Code == taxCode);
+        if (taxType != null)
+        {
+            model.TaxRate = taxType.Rate;
+            showExoneration = taxType.AllowsExoneration;
+            if (!showExoneration)
+            {
+                model.ExonerationPercentage = 0;
+                model.ExonerationDocument = null;
+            }
+            CalculateTotals();
+        }
+    }
+
+    private void OpenProductDialog()
+    {
+        // Aquí implementaremos el diálogo de búsqueda avanzada de productos
+        ToastService.ShowInfo("Implementar búsqueda avanzada de productos");
+    }
+
+    private void CalculateTotals()
+    {
+        if (model.Quantity <= 0 || model.UnitPrice <= 0)
+            return;
+
+        // Cálculo del subtotal
+        model.SubTotal = model.Quantity * model.UnitPrice;
+
+        // Cálculo del descuento
+        model.DiscountAmount = model.DiscountPercentage > 0 
+            ? (model.SubTotal * model.DiscountPercentage / 100)
+            : 0;
+
+        var baseImponible = model.SubTotal - model.DiscountAmount;
+
+        // Cálculo del impuesto
+        var taxAmount = baseImponible * (model.TaxRate / 100);
+        
+        // Si hay exoneración, se aplica al monto del impuesto
+        if (model.ExonerationPercentage > 0)
+        {
+            taxAmount -= taxAmount * (model.ExonerationPercentage / 100);
+        }
+
+        model.TaxAmount = taxAmount;
+
+        // Cálculo del total
+        model.Total = baseImponible + model.TaxAmount;
+    }
+
+    private async Task OnSubmit()
+    {
+        if (model.Quantity <= 0)
+        {
+            ToastService.ShowError("La cantidad debe ser mayor a 0");
+            return;
+        }
+
+        if (model.UnitPrice <= 0)
+        {
+            ToastService.ShowError("El precio unitario debe ser mayor a 0");
+            return;
+        }
+
+        if (model.DiscountPercentage > 0 && string.IsNullOrEmpty(model.DiscountReason))
+        {
+            ToastService.ShowError("Debe indicar la naturaleza del descuento");
+            return;
+        }
+
+        await OnLineAdded.InvokeAsync(model);
+        dialog.Close(false);
+    }
+
+}

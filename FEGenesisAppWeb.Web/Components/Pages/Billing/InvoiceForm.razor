@@ -1,0 +1,560 @@
+﻿@page "/facturacion/nueva"
+@page "/facturacion/editar/{Id:int}"
+@using FEGenesisAppWeb.Models.Models.Billing
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>@(Id == null ? "Nueva Factura" : "Editar Factura") - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenButton Icon="arrow_back" Click="@(() => NavigationManager.NavigateTo("/facturacion/listado"))" />
+                <RadzenText TextStyle="TextStyle.H3">@(Id == null ? "Nueva Factura" : "Editar Factura")</RadzenText>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTemplateForm TItem="InvoiceFormModel" Data=@model Submit=@OnSubmit>
+        <RadzenRow>
+            <!-- Información General -->
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenCard class="mb-4">
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Información General</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Tipo de Documento" />
+                                <RadzenDropDown @bind-Value=@model.DocumentType Data=@documentTypes
+                                              TextProperty="Name" ValueProperty="Code" Class="w-100"
+                                              Change=@OnDocumentTypeChange />
+                                <RadzenRequiredValidator Component="DocumentType" Text="El tipo de documento es requerido" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Fecha" />
+                                <RadzenDatePicker @bind-Value=@model.Date Class="w-100" DateFormat="dd/MM/yyyy" />
+                                <RadzenRequiredValidator Component="Date" Text="La fecha es requerida" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Condición de Venta" />
+                                <RadzenDropDown @bind-Value=@model.PaymentTerm Data=@paymentTerms
+                                              TextProperty="Description" ValueProperty="Code" Class="w-100" />
+                                <RadzenRequiredValidator Component="PaymentTerm" Text="La condición de venta es requerida" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Método de Pago" />
+                                <RadzenDropDown @bind-Value=@model.PaymentMethod Data=@paymentMethods
+                                              TextProperty="Description" ValueProperty="Code" Class="w-100" />
+                                <RadzenRequiredValidator Component="PaymentMethod" Text="El método de pago es requerido" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Moneda" />
+                                <RadzenDropDown @bind-Value=@model.Currency Data=@currencies
+                                              TextProperty="Description" ValueProperty="Code" Class="w-100" />
+                                <RadzenRequiredValidator Component="Currency" Text="La moneda es requerida" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Tipo de Cambio" />
+                                <RadzenNumeric @bind-Value=@model.ExchangeRate Disabled=@(model.Currency == "CRC") 
+                                             Format="0.00" Step="0.01" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenCard>
+
+                <!-- Información del Cliente -->
+                <RadzenCard class="mb-4">
+                    <RadzenRow>
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenText TextStyle="TextStyle.H6">Información del Cliente</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12">
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Class="mb-4">
+                                <RadzenButton Icon="person_search" Text="Buscar Cliente" 
+                                            ButtonStyle="ButtonStyle.Secondary" Click=@OpenClientDialog />
+                                @if (model.ClientId > 0)
+                                {
+                                    <RadzenButton Icon="clear" Text="Limpiar" 
+                                                ButtonStyle="ButtonStyle.Light" Click=@ClearClient />
+                                }
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @if (model.ClientId > 0)
+                        {
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenStack>
+                                    <RadzenLabel Text="Nombre/Razón Social" />
+                                    <RadzenTextBox Value=@selectedClient.Name Disabled="true" Class="w-100" />
+                                </RadzenStack>
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenStack>
+                                    <RadzenLabel Text="Identificación" />
+                                    <RadzenTextBox Value=@($"{selectedClient.IdentificationType} - {selectedClient.Identification}") 
+                                                 Disabled="true" Class="w-100" />
+                                </RadzenStack>
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenStack>
+                                    <RadzenLabel Text="Correo Electrónico" />
+                                    <RadzenTextBox Value=@selectedClient.Email Disabled="true" Class="w-100" />
+                                </RadzenStack>
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenStack>
+                                    <RadzenLabel Text="Teléfono" />
+                                    <RadzenTextBox Value=@($"{selectedClient.PhoneCode} {selectedClient.Phone}") 
+                                                 Disabled="true" Class="w-100" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        }
+                    </RadzenRow>
+                </RadzenCard>
+
+                <!-- Líneas de Factura -->
+                <RadzenCard class="mb-4">
+                    <RadzenRow>
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack Orientation="Orientation.Horizontal" 
+                                       JustifyContent="JustifyContent.SpaceBetween" 
+                                       AlignItems="AlignItems.Center">
+                                <RadzenText TextStyle="TextStyle.H6">Líneas de Factura</RadzenText>
+                                <RadzenButton Icon="add" Text="Agregar Línea" ButtonStyle="ButtonStyle.Secondary"
+                                            Click=@(() => OpenLineDialog()) Disabled=@(model.ClientId == 0) />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12">
+                            <RadzenDataGrid @ref="linesGrid" Data="@model.Lines" TItem="InvoiceLine"
+                                          AllowSorting="true" AllowPaging="true" PageSize="5">
+                                <Columns>
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="LineNumber" Title="#" Width="50px" />
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="Code" Title="Código" />
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="Description" Title="Descripción" />
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="Quantity" Title="Cantidad">
+                                        <Template Context="data">
+                                            @data.Quantity.ToString("N2")
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="UnitPrice" Title="Precio Unit.">
+                                        <Template Context="data">
+                                            @data.UnitPrice.ToString("C2")
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="DiscountPercentage" Title="Desc %">
+                                        <Template Context="data">
+                                            @(data.DiscountPercentage > 0 ? $"{data.DiscountPercentage:N2}%" : "")
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="SubTotal" Title="SubTotal">
+                                        <Template Context="data">
+                                            @data.SubTotal.ToString("C2")
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="TaxAmount" Title="Impuesto">
+                                        <Template Context="data">
+                                            @data.TaxAmount.ToString("C2")
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Property="Total" Title="Total">
+                                        <Template Context="data">
+                                            @data.Total.ToString("C2")
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                    <RadzenDataGridColumn TItem="InvoiceLine" Context="data" Width="70px">
+                                        <Template>
+                                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Small"
+                                                        Click=@(() => RemoveLine(data)) />
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                </Columns>
+                            </RadzenDataGrid>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenCard>
+            </RadzenColumn>
+
+            <!-- Panel Lateral -->
+            <RadzenColumn Size="12" SizeMD="4">
+                <!-- Totales -->
+                <RadzenCard class="mb-4">
+                    <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Totales</RadzenText>
+                    <RadzenStack Gap="1rem">
+                        <div class="d-flex justify-content-between">
+                            <RadzenText TextStyle="TextStyle.Body1">SubTotal:</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H6">@model.SubTotal.ToString("C2")</RadzenText>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <RadzenText TextStyle="TextStyle.Body1">Descuento:</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H6">@model.DiscountAmount.ToString("C2")</RadzenText>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <RadzenText TextStyle="TextStyle.Body1">Impuesto:</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H6">@model.TaxAmount.ToString("C2")</RadzenText>
+                        </div>
+                        <RadzenDivider/>
+                        <div class="d-flex justify-content-between">
+                            <RadzenText TextStyle="TextStyle.H6">Total:</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@model.Total.ToString("C2")</RadzenText>
+                        </div>
+                    </RadzenStack>
+                </RadzenCard>
+
+                <!-- Observaciones -->
+                <RadzenCard class="mb-4">
+                    <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Observaciones</RadzenText>
+                    <RadzenTextArea @bind-Value=@model.Notes Rows="4" Class="w-100" />
+                </RadzenCard>
+
+                <!-- Botones de Acción -->
+                <RadzenCard>
+                    <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+                        <RadzenButton Text="Guardar Como Borrador" ButtonStyle="ButtonStyle.Secondary"
+                                    Click=@SaveDraft Icon="save" Class="w-100" />
+                        <RadzenButton Text="Emitir Factura" ButtonStyle="ButtonStyle.Primary"
+                                    Click=@EmitInvoice Icon="send" Class="w-100" 
+                                    Disabled=@(!CanEmitInvoice()) />
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenTemplateForm>
+</div>
+
+@* Diálogos modales *@
+<ClientDialog @ref="clientDialog"
+              OnClientSelected="EventCallback.Factory.Create<ClientData>(this, OnClientSelected)" />
+<LineDialog @ref="lineDialog"
+            OnLineAdded="EventCallback.Factory.Create<InvoiceLine>(this, OnLineAdded)"
+            SelectedClient="selectedClient" />
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private InvoiceFormModel model = new();
+    private ClientData selectedClient = new();
+    private RadzenDataGrid<InvoiceLine> linesGrid;
+    private ClientDialog clientDialog;
+    private LineDialog lineDialog;
+    private bool isSaving;
+
+    // Catálogos
+    private List<DocumentType> documentTypes = new();
+    private List<PaymentTerm> paymentTerms = new();
+    private List<PaymentMethod> paymentMethods = new();
+    private List<Currency> currencies = new();
+
+    protected override void OnInitialized()
+    {
+        LoadCatalogs();
+        InitializeNewInvoice();
+
+        if (Id.HasValue)
+        {
+            LoadInvoice();
+        }
+    }
+
+    private void LoadCatalogs()
+    {
+        // Datos de prueba - Tipos de documento
+        documentTypes = new List<DocumentType>
+        {
+            new() { Code = "01", Name = "Factura Electrónica" },
+            new() { Code = "02", Name = "Nota de Débito" },
+            new() { Code = "03", Name = "Nota de Crédito" },
+            new() { Code = "04", Name = "Tiquete Electrónico" }
+        };
+
+        // Datos de prueba - Condiciones de venta
+        paymentTerms = new List<PaymentTerm>
+        {
+            new() { Code = "01", Description = "Contado" },
+            new() { Code = "02", Description = "Crédito" },
+            new() { Code = "03", Description = "Consignación" },
+            new() { Code = "04", Description = "Apartado" }
+        };
+
+        // Datos de prueba - Métodos de pago
+        paymentMethods = new List<PaymentMethod>
+        {
+            new() { Code = "01", Description = "Efectivo" },
+            new() { Code = "02", Description = "Tarjeta" },
+            new() { Code = "03", Description = "Cheque" },
+            new() { Code = "04", Description = "Transferencia" },
+            new() { Code = "05", Description = "Recaudado por terceros" }
+        };
+
+        // Datos de prueba - Monedas
+        currencies = new List<Currency>
+        {
+            new() { Code = "CRC", Description = "Colón" },
+            new() { Code = "USD", Description = "Dólar" },
+            new() { Code = "EUR", Description = "Euro" }
+        };
+    }
+
+    private void InitializeNewInvoice()
+    {
+        model = new InvoiceFormModel
+        {
+            Date = DateTime.Today,
+            DocumentType = "01", // Factura Electrónica por defecto
+            Currency = "CRC",   // Colones por defecto
+            ExchangeRate = 1,   // Tipo de cambio por defecto
+            PaymentTerm = "01", // Contado por defecto
+            PaymentMethod = "01", // Efectivo por defecto
+            Lines = new List<InvoiceLine>()
+        };
+    }
+
+    private void LoadInvoice()
+    {
+        if (Id == 1) // Datos de prueba para edición
+        {
+            model = new InvoiceFormModel
+            {
+                DocumentType = "01",
+                Date = DateTime.Today,
+                Currency = "CRC",
+                ExchangeRate = 1,
+                PaymentTerm = "01",
+                PaymentMethod = "01",
+                ClientId = 1,
+                Notes = "Factura de prueba",
+                Lines = new List<InvoiceLine>
+                {
+                    new() {
+                        LineNumber = 1,
+                        Code = "001",
+                        Description = "Producto 1",
+                        Quantity = 2,
+                        UnitPrice = 1000,
+                        DiscountPercentage = 0,
+                        TaxRate = 13,
+                        SubTotal = 2000,
+                        TaxAmount = 260,
+                        Total = 2260
+                    }
+                }
+            };
+
+            selectedClient = new ClientData
+            {
+                Id = 1,
+                Name = "Empresa A S.A.",
+                IdentificationType = "02",
+                Identification = "3101123456",
+                Email = "info@empresaa.com",
+                PhoneCode = "+506",
+                Phone = "2222-1111"
+            };
+
+            RecalculateTotals();
+        }
+    }
+
+    private void OnDocumentTypeChange(object value)
+    {
+        var documentType = value?.ToString();
+        if (documentType == "02" || documentType == "03") // Nota de débito o crédito
+        {
+            ToastService.ShowInfo("Seleccione la factura que desea referenciar");
+            // Aquí implementaremos el diálogo para seleccionar la factura de referencia
+        }
+    }
+
+    private async Task OpenClientDialog()
+    {
+        await clientDialog.Show();
+    }
+
+    private void OnClientSelected(ClientData client)
+    {
+        selectedClient = client;
+        model.ClientId = client.Id;
+        StateHasChanged();
+    }
+
+    private void ClearClient()
+    {
+        selectedClient = new ClientData();
+        model.ClientId = 0;
+        StateHasChanged();
+    }
+
+    private async Task OpenLineDialog()
+    {
+        if (model.ClientId == 0)
+        {
+            ToastService.ShowWarning("Debe seleccionar un cliente primero");
+            return;
+        }
+
+        await lineDialog.Show();
+    }
+
+    private void OnLineAdded(InvoiceLine line)
+    {
+        line.LineNumber = model.Lines.Count + 1;
+        model.Lines.Add(line);
+        RecalculateTotals();
+        StateHasChanged();
+    }
+
+    private void RemoveLine(InvoiceLine line)
+    {
+        model.Lines.Remove(line);
+        // Renumerar las líneas
+        for (int i = 0; i < model.Lines.Count; i++)
+        {
+            model.Lines[i].LineNumber = i + 1;
+        }
+        RecalculateTotals();
+    }
+
+    private void RecalculateTotals()
+    {
+        model.SubTotal = model.Lines.Sum(l => l.SubTotal);
+        model.DiscountAmount = model.Lines.Sum(l => l.DiscountAmount);
+        model.TaxAmount = model.Lines.Sum(l => l.TaxAmount);
+        model.Total = model.Lines.Sum(l => l.Total);
+    }
+
+    private bool CanEmitInvoice()
+    {
+        return model.ClientId > 0 && model.Lines.Any();
+    }
+
+    private async Task SaveDraft()
+    {
+        try
+        {
+            isSaving = true;
+            // Aquí implementaremos el guardado cuando tengamos la API
+            await Task.Delay(1000); // Simulación
+            ToastService.ShowSuccess("Borrador guardado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al guardar: " + ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task EmitInvoice()
+    {
+        try
+        {
+            isSaving = true;
+            // Aquí implementaremos la emisión cuando tengamos la API
+            await Task.Delay(2000); // Simulación
+            ToastService.ShowSuccess("Factura emitida exitosamente");
+            NavigationManager.NavigateTo("/facturacion/listado");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al emitir la factura: " + ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        try
+        {
+            if (!model.Lines.Any())
+            {
+                ToastService.ShowError("Debe agregar al menos una línea a la factura");
+                return;
+            }
+
+            isSaving = true;
+            // Aquí implementaremos el guardado cuando tengamos la API
+            await Task.Delay(1000); // Simulación
+
+            ToastService.ShowSuccess("Factura guardada exitosamente");
+            NavigationManager.NavigateTo("/facturacion/listado");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al guardar: " + ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class InvoiceFormModel
+    {
+        public string DocumentType { get; set; }
+        public DateTime Date { get; set; }
+        public string Currency { get; set; }
+        public decimal ExchangeRate { get; set; }
+        public string PaymentTerm { get; set; }
+        public string PaymentMethod { get; set; }
+        public long ClientId { get; set; }
+        public string Notes { get; set; }
+        public List<InvoiceLine> Lines { get; set; }
+        public decimal SubTotal { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal TaxAmount { get; set; }
+        public decimal Total { get; set; }
+    }
+
+    private class PaymentTerm
+    {
+        public string Code { get; set; }
+        public string Description { get; set; }
+    }
+
+    private class PaymentMethod
+    {
+        public string Code { get; set; }
+        public string Description { get; set; }
+    }
+
+    private class Currency
+    {
+        public string Code { get; set; }
+        public string Description { get; set; }
+    }
+
+    private class DocumentType
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
+    }
+}

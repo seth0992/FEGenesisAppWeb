@@ -1,0 +1,265 @@
+﻿@page "/facturacion/listado"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Listado de Facturas - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenText TextStyle="TextStyle.H3">Facturas Electrónicas</RadzenText>
+                <RadzenButton Icon="add" Text="Nueva Factura" ButtonStyle="ButtonStyle.Primary"
+                              Click="@(() => NavigationManager.NavigateTo("/facturacion/nueva"))" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <!-- Filtros -->
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Class="mb-4">
+                    <RadzenTextBox Placeholder="Buscar por número o cliente..."
+                                   @bind-Value=@searchText Change=@(args => OnSearch(args))
+                                   Style="width: 300px;" />
+
+                    <RadzenDatePicker @bind-Value=@startDate Placeholder="Fecha Inicio"
+                                      DateFormat="dd/MM/yyyy" Class="w-100" Style="max-width: 200px;" />
+
+                    <RadzenDatePicker @bind-Value=@endDate Placeholder="Fecha Fin"
+                                      DateFormat="dd/MM/yyyy" Class="w-100" Style="max-width: 200px;" />
+
+                    <RadzenDropDown Data=@documentTypes @bind-Value=@selectedDocumentType
+                                    TextProperty="Name" ValueProperty="Code" AllowClear="true"
+                                    Placeholder="Tipo de Documento" Class="w-100" Style="max-width: 200px;" />
+
+                    <RadzenDropDown Data=@statuses @bind-Value=@selectedStatus
+                                    AllowClear="true" Placeholder="Estado"
+                                    Class="w-100" Style="max-width: 200px;" />
+
+                    <RadzenButton Icon="search" Text="Buscar" ButtonStyle="ButtonStyle.Secondary" Click=@Search />
+                    <RadzenButton Icon="refresh" Text="Limpiar" ButtonStyle="ButtonStyle.Light" Click=@ClearFilters />
+                </RadzenStack>
+
+                <!-- Tabla de Facturas -->
+                <RadzenDataGrid @ref="invoiceGrid" Data="@invoices" TItem="InvoiceData"
+                                AllowPaging="true" AllowSorting="true" PageSize="10"
+                                PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="DocumentType" Title="Tipo"
+                                              Width="100px">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@GetDocumentTypeDescription(data.DocumentType)" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Number" Title="Número" />
+
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Date" Title="Fecha">
+                            <Template Context="data">
+                                @data.Date.ToShortDateString()
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="ClientName" Title="Cliente" />
+
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Total" Title="Total">
+                            <Template Context="data">
+                                @data.Total.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Status" Title="Estado">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(data.Status)" Text="@data.Status" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="InvoiceData" Title="Acciones" TextAlign="TextAlign.Center" Width="220px">
+                            <Template Context="data">
+                                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Medium"
+                                              Click="@(() => ViewInvoice(data.Id))" Class="mx-1"
+                                              ToolTip="Ver Detalle" />
+
+                                <RadzenButton Icon="picture_as_pdf" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Medium"
+                                              Click="@(() => DownloadPDF(data.Id))" Class="mx-1"
+                                              ToolTip="Descargar PDF" />
+
+                                <RadzenButton Icon="download" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium"
+                                              Click="@(() => DownloadXML(data.Id))" Class="mx-1"
+                                              ToolTip="Descargar XML" />
+
+                                @if (data.Status == "Pendiente")
+                                {
+                                    <RadzenButton Icon="send" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Medium"
+                                                  Click="@(() => SendToHacienda(data.Id))" Class="mx-1"
+                                                  ToolTip="Enviar a Hacienda" />
+                                }
+                                else if (data.Status == "Rechazada")
+                                {
+                                    <RadzenButton Icon="restart_alt" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Medium"
+                                                  Click="@(() => RetryInvoice(data.Id))" Class="mx-1"
+                                                  ToolTip="Reintentar" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    RadzenDataGrid<InvoiceData> invoiceGrid;
+    IEnumerable<InvoiceData> invoices;
+    string searchText = "";
+    DateTime? startDate;
+    DateTime? endDate;
+    string selectedDocumentType;
+    string selectedStatus;
+
+    List<DocumentType> documentTypes = new();
+    List<string> statuses = new();
+
+    protected override void OnInitialized()
+    {
+        // Datos de prueba para tipos de documento
+        documentTypes = new List<DocumentType>
+        {
+            new() { Code = "01", Name = "Factura Electrónica" },
+            new() { Code = "02", Name = "Nota de Débito" },
+            new() { Code = "03", Name = "Nota de Crédito" },
+            new() { Code = "04", Name = "Tiquete Electrónico" }
+        };
+
+        // Datos de prueba para estados
+        statuses = new List<string>
+        {
+            "Pendiente",
+            "Enviada",
+            "Aprobada",
+            "Rechazada"
+        };
+
+        // Datos de prueba para facturas
+        invoices = new List<InvoiceData>
+        {
+            new() { Id = 1, DocumentType = "01", Number = "00100001010000000001", Date = DateTime.Now.AddDays(-1),
+                   ClientName = "Empresa A S.A.", Total = 150000, Status = "Aprobada" },
+            new() { Id = 2, DocumentType = "01", Number = "00100001010000000002", Date = DateTime.Now.AddDays(-2),
+                   ClientName = "Juan Pérez", Total = 75000, Status = "Pendiente" },
+            new() { Id = 3, DocumentType = "03", Number = "00100001030000000003", Date = DateTime.Now.AddDays(-3),
+                   ClientName = "Empresa A S.A.", Total = -25000, Status = "Aprobada" },
+            new() { Id = 4, DocumentType = "01", Number = "00100001010000000004", Date = DateTime.Now.AddDays(-4),
+                   ClientName = "María González", Total = 250000, Status = "Rechazada" },
+            new() { Id = 5, DocumentType = "04", Number = "00100001040000000005", Date = DateTime.Now.AddDays(-5),
+                   ClientName = "Consumidor Final", Total = 15000, Status = "Enviada" }
+        };
+    }
+
+    void OnSearch(string value)
+    {
+        // Aquí implementaremos la búsqueda cuando tengamos la API
+        ToastService.ShowInfo("Implementar búsqueda con: " + value);
+    }
+
+    void Search()
+    {
+        // Aquí implementaremos la búsqueda con todos los filtros cuando tengamos la API
+        ToastService.ShowInfo("Buscando...");
+    }
+
+    void ClearFilters()
+    {
+        searchText = "";
+        startDate = null;
+        endDate = null;
+        selectedDocumentType = null;
+        selectedStatus = null;
+        // Aquí resetearemos los filtros cuando tengamos la API
+        ToastService.ShowInfo("Filtros limpiados");
+    }
+
+    string GetDocumentTypeDescription(string code)
+    {
+        return documentTypes.FirstOrDefault(t => t.Code == code)?.Name ?? code;
+    }
+
+    BadgeStyle GetStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Aprobada" => BadgeStyle.Success,
+            "Enviada" => BadgeStyle.Info,
+            "Pendiente" => BadgeStyle.Warning,
+            "Rechazada" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    void ViewInvoice(int id)
+    {
+        NavigationManager.NavigateTo($"/facturacion/detalle/{id}");
+    }
+
+    async Task DownloadPDF(int id)
+    {
+        ToastService.ShowInfo($"Descargando PDF de la factura {id}");
+        await Task.Delay(1000); // Simulación
+    }
+
+    async Task DownloadXML(int id)
+    {
+        ToastService.ShowInfo($"Descargando XML de la factura {id}");
+        await Task.Delay(1000); // Simulación
+    }
+
+    async Task SendToHacienda(int id)
+    {
+        try
+        {
+            // Aquí implementaremos el envío a Hacienda cuando tengamos la API
+            await Task.Delay(2000); // Simulación
+            ToastService.ShowSuccess("Factura enviada exitosamente a Hacienda");
+            await invoiceGrid.Reload();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al enviar la factura: " + ex.Message);
+        }
+    }
+
+    async Task RetryInvoice(int id)
+    {
+        try
+        {
+            // Aquí implementaremos el reintento cuando tengamos la API
+            await Task.Delay(2000); // Simulación
+            ToastService.ShowSuccess("Factura reenviada exitosamente");
+            await invoiceGrid.Reload();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al reenviar la factura: " + ex.Message);
+        }
+    }
+
+    private class InvoiceData
+    {
+        public int Id { get; set; }
+        public string DocumentType { get; set; }
+        public string Number { get; set; }
+        public DateTime Date { get; set; }
+        public string ClientName { get; set; }
+        public decimal Total { get; set; }
+        public string Status { get; set; }
+    }
+
+    private class DocumentType
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
+    }
+}

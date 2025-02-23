@@ -1,0 +1,522 @@
+﻿@page "/facturacion/detalle/{Id:int}"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Detalle de Factura - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenButton Icon="arrow_back" Click="@(() => NavigationManager.NavigateTo("/facturacion/listado"))" />
+                <RadzenText TextStyle="TextStyle.H3">Detalle de Factura</RadzenText>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeMD="8">
+            <!-- Información Principal -->
+            <RadzenCard class="mb-4">
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenStack Orientation="Orientation.Horizontal" 
+                                   JustifyContent="JustifyContent.SpaceBetween"
+                                   AlignItems="AlignItems.Center" class="mb-4">
+                            <RadzenStack>
+                                <RadzenText TextStyle="TextStyle.H5">@invoice.Number</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body2">
+                                    @GetDocumentTypeDescription(invoice.DocumentType)
+                                </RadzenText>
+                            </RadzenStack>
+                            <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(invoice.Status)" 
+                                        Text="@invoice.Status" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Fecha</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@invoice.Date.ToShortDateString()</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Condición de Venta</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@GetPaymentTermDescription(invoice.PaymentTerm)</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Método de Pago</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@GetPaymentMethodDescription(invoice.PaymentMethod)</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Moneda</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@invoice.Currency</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Tipo de Cambio</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@invoice.ExchangeRate.ToString("N2")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Clave Numérica</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@invoice.KeyDocument</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+
+            <!-- Información del Cliente -->
+            <RadzenCard class="mb-4">
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Información del Cliente</RadzenText>
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Nombre/Razón Social</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@invoice.ClientName</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Identificación</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">
+                                @($"{invoice.ClientIdentificationType} - {invoice.ClientIdentification}")
+                            </RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Correo Electrónico</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@invoice.ClientEmail</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Teléfono</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">
+                                @($"{invoice.ClientPhoneCode} {invoice.ClientPhone}")
+                            </RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+
+            <!-- Líneas de Factura -->
+            <RadzenCard class="mb-4">
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Detalle de Líneas</RadzenText>
+                <RadzenDataGrid Data="@invoice.Lines" TItem="InvoiceLine" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="LineNumber" Title="#" Width="50px" />
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="Code" Title="Código" />
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="Description" Title="Descripción" />
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="Quantity" Title="Cantidad">
+                            <Template Context="data">
+                                @data.Quantity.ToString("N2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="UnitPrice" Title="Precio Unit.">
+                            <Template Context="data">
+                                @data.UnitPrice.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="DiscountPercentage" Title="Desc %">
+                            <Template Context="data">
+                                @(data.DiscountPercentage > 0 ? $"{data.DiscountPercentage:N2}%" : "")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="SubTotal" Title="SubTotal">
+                            <Template Context="data">
+                                @data.SubTotal.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="TaxAmount" Title="Impuesto">
+                            <Template Context="data">
+                                @data.TaxAmount.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="InvoiceLine" Property="Total" Title="Total">
+                            <Template Context="data">
+                                @data.Total.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+
+            @if (invoice.ReferenceDocuments?.Any() == true)
+            {
+                <!-- Documentos Relacionados -->
+                <RadzenCard class="mb-4">
+                    <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Documentos Relacionados</RadzenText>
+                    <RadzenDataGrid Data="@invoice.ReferenceDocuments" TItem="ReferenceDocument" 
+                                  AllowPaging="true" PageSize="5">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="ReferenceDocument" Property="Type" Title="Tipo">
+                                <Template Context="data">
+                                    @GetDocumentTypeDescription(data.Type)
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="ReferenceDocument" Property="Number" Title="Número" />
+                            <RadzenDataGridColumn TItem="ReferenceDocument" Property="Date" Title="Fecha">
+                                <Template Context="data">
+                                    @data.Date.ToShortDateString()
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="ReferenceDocument" Property="Reason" Title="Razón" />
+                        </Columns>
+                    </RadzenDataGrid>
+                </RadzenCard>
+            }
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="4">
+            <!-- Totales -->
+            <RadzenCard class="mb-4">
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Totales</RadzenText>
+                <RadzenStack Gap="1rem">
+                    <div class="d-flex justify-content-between">
+                        <RadzenText TextStyle="TextStyle.Body1">SubTotal:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H6">@invoice.SubTotal.ToString("C2")</RadzenText>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <RadzenText TextStyle="TextStyle.Body1">Descuento:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H6">@invoice.DiscountAmount.ToString("C2")</RadzenText>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <RadzenText TextStyle="TextStyle.Body1">Impuesto:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H6">@invoice.TaxAmount.ToString("C2")</RadzenText>
+                    </div>
+                    <RadzenDivider/>
+                    <div class="d-flex justify-content-between">
+                        <RadzenText TextStyle="TextStyle.H6">Total:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5">@invoice.Total.ToString("C2")</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+
+            <!-- Observaciones -->
+            @if (!string.IsNullOrEmpty(invoice.Notes))
+            {
+                <RadzenCard class="mb-4">
+                    <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Observaciones</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1">@invoice.Notes</RadzenText>
+                </RadzenCard>
+            }
+
+            <!-- Historial de Estados -->
+            <RadzenCard class="mb-4">
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Historial de Estados</RadzenText>
+                <RadzenStack Gap="1rem">
+                    @foreach (var status in invoice.StatusHistory.OrderByDescending(s => s.Date))
+                    {
+                        <div>
+                            <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(status.Status)" 
+                                        Text="@status.Status" />
+                            <RadzenText TextStyle="TextStyle.Caption">
+                                @status.Date.ToString("dd/MM/yyyy HH:mm:ss")
+                            </RadzenText>
+                            @if (!string.IsNullOrEmpty(status.Detail))
+                            {
+                                <RadzenText TextStyle="TextStyle.Body2">@status.Detail</RadzenText>
+                            }
+                        </div>
+                    }
+                </RadzenStack>
+            </RadzenCard>
+
+            <!-- Acciones -->
+            <RadzenCard>
+                <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+                    <RadzenButton Text="Descargar PDF" Icon="picture_as_pdf" 
+                                ButtonStyle="ButtonStyle.Secondary" Click=@DownloadPDF 
+                                Class="w-100" />
+                    <RadzenButton Text="Descargar XML" Icon="download" 
+                                ButtonStyle="ButtonStyle.Light" Click=@DownloadXML 
+                                Class="w-100" />
+                    @if (invoice.Status == "Pendiente")
+                    {
+                        <RadzenButton Text="Enviar a Hacienda" Icon="send" 
+                                    ButtonStyle="ButtonStyle.Success" Click=@SendToHacienda 
+                                    Class="w-100" />
+                    }
+                    else if (invoice.Status == "Rechazada")
+                    {
+                        <RadzenButton Text="Reintentar Envío" Icon="restart_alt" 
+                                    ButtonStyle="ButtonStyle.Warning" Click=@RetryInvoice 
+                                    Class="w-100" />
+                    }
+                    @if (invoice.Status == "Aprobada")
+                    {
+                        <RadzenButton Text="Enviar por Correo" Icon="email" 
+                                    ButtonStyle="ButtonStyle.Info" Click=@SendEmail 
+                                    Class="w-100" />
+                    }
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private InvoiceDetail invoice = new();
+
+    protected override void OnInitialized()
+    {
+        LoadInvoice();
+    }
+
+    private void LoadInvoice()
+    {
+        // Datos de prueba
+        invoice = new InvoiceDetail
+        {
+            DocumentType = "01",
+            Number = "00100001010000000001",
+            Date = DateTime.Now.AddDays(-1),
+            PaymentTerm = "01",
+            PaymentMethod = "01",
+            Currency = "CRC",
+            ExchangeRate = 1,
+            KeyDocument = "50631012300010000000100100001010000000001199999999",
+            Status = "Aprobada",
+
+            ClientName = "Empresa A S.A.",
+            ClientIdentificationType = "02",
+            ClientIdentification = "3101123456",
+            ClientEmail = "info@empresaa.com",
+            ClientPhoneCode = "+506",
+            ClientPhone = "2222-1111",
+
+            SubTotal = 150000,
+            DiscountAmount = 0,
+            TaxAmount = 19500,
+            Total = 169500,
+
+            Notes = "Factura de prueba",
+
+            Lines = new List<InvoiceLine>
+            {
+                new() {
+                    LineNumber = 1,
+                    Code = "001",
+                    Description = "Producto 1",
+                    Quantity = 2,
+                    UnitPrice = 25000,
+                    SubTotal = 50000,
+                    TaxAmount = 6500,
+                    Total = 56500
+                },
+                new() {
+                    LineNumber = 2,
+                    Code = "002",
+                    Description = "Servicio 1",
+                    Quantity = 1,
+                    UnitPrice = 100000,
+                    SubTotal = 100000,
+                    TaxAmount = 13000,
+                    Total = 113000
+                }
+            },
+
+            StatusHistory = new List<InvoiceStatus>
+            {
+                new() {
+                    Status = "Pendiente",
+                    Date = DateTime.Now.AddDays(-1).AddHours(-1),
+                    Detail = "Factura creada"
+                },
+                new() {
+                    Status = "Enviada",
+                    Date = DateTime.Now.AddDays(-1).AddMinutes(-30),
+                    Detail = "Enviada a Hacienda"
+                },
+                new() {
+                    Status = "Aprobada",
+                    Date = DateTime.Now.AddDays(-1).AddMinutes(-25),
+                    Detail = "Aceptada por Hacienda"
+                }
+            }
+        };
+    }
+
+    private string GetDocumentTypeDescription(string code)
+    {
+        return code switch
+        {
+            "01" => "Factura Electrónica",
+            "02" => "Nota de Débito",
+            "03" => "Nota de Crédito",
+            "04" => "Tiquete Electrónico",
+            _ => code
+        };
+    }
+
+    private string GetPaymentTermDescription(string code)
+    {
+        return code switch
+        {
+            "01" => "Contado",
+            "02" => "Crédito",
+            "03" => "Consignación",
+            "04" => "Apartado",
+            _ => code
+        };
+    }
+
+    private string GetPaymentMethodDescription(string code)
+    {
+        return code switch
+        {
+            "01" => "Efectivo",
+            "02" => "Tarjeta",
+            "03" => "Cheque",
+            "04" => "Transferencia",
+            "05" => "Recaudado por terceros",
+            _ => code
+        };
+    }
+
+    private BadgeStyle GetStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Aprobada" => BadgeStyle.Success,
+            "Enviada" => BadgeStyle.Info,
+            "Pendiente" => BadgeStyle.Warning,
+            "Rechazada" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    private async Task DownloadPDF()
+    {
+        ToastService.ShowInfo($"Descargando PDF de la factura {invoice.Number}");
+        await Task.Delay(1000); // Simulación
+    }
+
+    private async Task DownloadXML()
+    {
+        ToastService.ShowInfo($"Descargando XML de la factura {invoice.Number}");
+        await Task.Delay(1000); // Simulación
+    }
+
+    private async Task SendToHacienda()
+    {
+        try
+        {
+            // Aquí implementaremos el envío a Hacienda cuando tengamos la API
+            await Task.Delay(2000); // Simulación
+            ToastService.ShowSuccess("Factura enviada exitosamente a Hacienda");
+            LoadInvoice(); // Recargar para mostrar nuevo estado
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al enviar la factura: " + ex.Message);
+        }
+    }
+
+    private async Task RetryInvoice()
+    {
+        try
+        {
+            // Aquí implementaremos el reintento cuando tengamos la API
+            await Task.Delay(2000); // Simulación
+            ToastService.ShowSuccess("Factura reenviada exitosamente");
+            LoadInvoice(); // Recargar para mostrar nuevo estado
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al reenviar la factura: " + ex.Message);
+        }
+    }
+
+    private async Task SendEmail()
+    {
+        try
+        {
+            // Aquí implementaremos el envío por correo cuando tengamos la API
+            await Task.Delay(1000); // Simulación
+            ToastService.ShowSuccess("Factura enviada por correo exitosamente");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al enviar el correo: " + ex.Message);
+        }
+    }
+
+    private class InvoiceDetail
+    {
+        public string DocumentType { get; set; }
+        public string Number { get; set; }
+        public DateTime Date { get; set; }
+        public string PaymentTerm { get; set; }
+        public string PaymentMethod { get; set; }
+        public string Currency { get; set; }
+        public decimal ExchangeRate { get; set; }
+        public string KeyDocument { get; set; }
+        public string Status { get; set; }
+
+        public string ClientName { get; set; }
+        public string ClientIdentificationType { get; set; }
+        public string ClientIdentification { get; set; }
+        public string ClientEmail { get; set; }
+        public string ClientPhoneCode { get; set; }
+        public string ClientPhone { get; set; }
+
+        public decimal SubTotal { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal TaxAmount { get; set; }
+        public decimal Total { get; set; }
+
+        public string Notes { get; set; }
+        public List<InvoiceLine> Lines { get; set; }
+        public List<ReferenceDocument> ReferenceDocuments { get; set; }
+        public List<InvoiceStatus> StatusHistory { get; set; }
+    }
+
+    private class InvoiceLine
+    {
+        public int LineNumber { get; set; }
+        public string Code { get; set; }
+        public string Description { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal DiscountPercentage { get; set; }
+        public decimal SubTotal { get; set; }
+        public decimal TaxAmount { get; set; }
+        public decimal Total { get; set; }
+    }
+
+    private class ReferenceDocument
+    {
+        public string Type { get; set; }
+        public string Number { get; set; }
+        public DateTime Date { get; set; }
+        public string Reason { get; set; }
+    }
+
+    private class InvoiceStatus
+    {
+        public string Status { get; set; }
+        public DateTime Date { get; set; }
+        public string Detail { get; set; }
+    }
+}

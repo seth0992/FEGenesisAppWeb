@@ -1,0 +1,154 @@
+﻿@page "/clientes/listado"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Listado de Clientes - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenText TextStyle="TextStyle.H3">Clientes</RadzenText>
+                <RadzenButton Icon="add" Text="Nuevo Cliente" ButtonStyle="ButtonStyle.Primary" Click="@(() => NavigationManager.NavigateTo("/clientes/nuevo"))" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <!-- Filtros -->
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Class="mb-4">
+                    <RadzenTextBox Placeholder="Buscar por nombre o identificación..." Style="width: 300px;"
+                                   @bind-Value=@searchText Change=@(args => OnSearch(args)) />
+
+                    <RadzenDropDown Data=@identificationTypes @bind-Value=@selectedIdentificationType
+                                    TextProperty="Description" ValueProperty="ID"
+                                    AllowClear="true" Placeholder="Tipo de identificación"
+                                    Change=@(args => OnSearch(searchText)) Class="w-100" Style="max-width: 200px;" />
+
+                    <RadzenButton Icon="refresh" Text="Limpiar" ButtonStyle="ButtonStyle.Light" Click=@ClearFilters />
+                </RadzenStack>
+
+                <!-- Tabla de Clientes -->
+                <RadzenDataGrid @ref="customerGrid" Data="@customers" TItem="CustomerData"
+                                AllowPaging="true" AllowSorting="true" PageSize="10"
+                                PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="CustomerData" Property="Name" Title="Nombre" />
+                        <RadzenDataGridColumn TItem="CustomerData" Property="IdentificationType" Title="Tipo ID">
+                            <Template Context="data">
+                                @GetIdentificationTypeDescription(data.IdentificationType)
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="CustomerData" Property="Identification" Title="Identificación" />
+                        <RadzenDataGridColumn TItem="CustomerData" Property="Email" Title="Correo" />
+                        <RadzenDataGridColumn TItem="CustomerData" Property="Phone" Title="Teléfono" />
+                        <RadzenDataGridColumn TItem="CustomerData" Property="IsActive" Title="Estado">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@(data.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)"
+                                             Text="@(data.IsActive ? "Activo" : "Inactivo")" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="CustomerData" Title="Acciones" TextAlign="TextAlign.Center" Width="220px">
+                            <Template Context="data">
+                                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium"
+                                              Click="@(() => EditCustomer(data.Id))" Class="mx-1" />
+                                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Medium"
+                                              Click="@(() => ViewCustomer(data.Id))" Class="mx-1" />
+                                <RadzenButton Icon="@(data.IsActive ? "cancel" : "check_circle_outline")"
+                                              ButtonStyle="@(data.IsActive ? ButtonStyle.Danger : ButtonStyle.Success)"
+                                              Size="ButtonSize.Medium"
+                                              Click="@(() => ToggleCustomerStatus(data))" Class="mx-1" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    RadzenDataGrid<CustomerData> customerGrid;
+    IEnumerable<CustomerData> customers;
+    string searchText = "";
+    string selectedIdentificationType = "";
+    List<IdentificationType> identificationTypes = new();
+
+    class CustomerData
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string IdentificationType { get; set; }
+        public string Identification { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    class IdentificationType
+    {
+        public string ID { get; set; }
+        public string Description { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        // Datos de prueba para tipos de identificación
+        identificationTypes = new List<IdentificationType>
+        {
+            new() { ID = "01", Description = "Cédula Física" },
+            new() { ID = "02", Description = "Cédula Jurídica" },
+            new() { ID = "03", Description = "DIMEX" },
+            new() { ID = "04", Description = "NITE" }
+        };
+
+        // Datos de prueba para clientes
+        customers = new List<CustomerData>
+        {
+            new() { Id = 1, Name = "Empresa A S.A.", IdentificationType = "02", Identification = "3101123456", Email = "info@empresaa.com", Phone = "2222-1111", IsActive = true },
+            new() { Id = 2, Name = "Juan Pérez", IdentificationType = "01", Identification = "108230456", Email = "juan@email.com", Phone = "8888-8888", IsActive = true },
+            new() { Id = 3, Name = "María González", IdentificationType = "01", Identification = "204560789", Email = "maria@email.com", Phone = "7777-7777", IsActive = true },
+            new() { Id = 4, Name = "Corporación XYZ", IdentificationType = "02", Identification = "3101789456", Email = "info@xyz.com", Phone = "2222-3333", IsActive = false },
+            new() { Id = 5, Name = "Carlos Smith", IdentificationType = "03", Identification = "123456789012", Email = "carlos@email.com", Phone = "6666-6666", IsActive = true }
+        };
+    }
+
+    void OnSearch(string value)
+    {
+        // Aquí implementaremos la búsqueda cuando tengamos la API
+        ToastService.ShowInfo("Implementar búsqueda con: " + value);
+    }
+
+    void ClearFilters()
+    {
+        searchText = "";
+        selectedIdentificationType = "";
+        // Aquí resetearemos los filtros cuando tengamos la API
+        ToastService.ShowInfo("Filtros limpiados");
+    }
+
+    string GetIdentificationTypeDescription(string id)
+    {
+        return identificationTypes.FirstOrDefault(t => t.ID == id)?.Description ?? id;
+    }
+
+    void EditCustomer(int id)
+    {
+        NavigationManager.NavigateTo($"/clientes/editar/{id}");
+    }
+
+    void ViewCustomer(int id)
+    {
+        NavigationManager.NavigateTo($"/clientes/detalle/{id}");
+    }
+
+    async Task ToggleCustomerStatus(CustomerData customer)
+    {
+        // Aquí implementaremos el cambio de estado cuando tengamos la API
+        customer.IsActive = !customer.IsActive;
+        await customerGrid.Reload();
+        ToastService.ShowSuccess($"Estado del cliente actualizado a: {(customer.IsActive ? "Activo" : "Inactivo")}");
+    }
+}

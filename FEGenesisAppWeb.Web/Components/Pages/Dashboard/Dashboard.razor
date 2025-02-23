@@ -1,51 +1,188 @@
-﻿@* Dashboard.razor *@
-@page "/"
+﻿@page "/"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
 
-<RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Dashboard</RadzenText>
+<PageTitle>Dashboard - GenesisFE</PageTitle>
 
-<RadzenRow Gap="1rem" Class="mt-4">
-    <RadzenColumn Size="12" SizeMD="3">
-        <RadzenCard>
-            <RadzenText TextStyle="TextStyle.H6">Facturas Emitidas</RadzenText>
-            <RadzenText TextStyle="TextStyle.H4">125</RadzenText>
-            <RadzenChart>
-                <RadzenLineSeries Data=@facturasPorDia ValueProperty="Cantidad" CategoryProperty="Fecha" />
-            </RadzenChart>
-        </RadzenCard>
-    </RadzenColumn>
-    <RadzenColumn Size="12" SizeMD="3">
-        <RadzenCard>
-            <RadzenText TextStyle="TextStyle.H6">Monto Total</RadzenText>
-            <RadzenText TextStyle="TextStyle.H4">₡2,500,000</RadzenText>
-        </RadzenCard>
-    </RadzenColumn>
-    <RadzenColumn Size="12" SizeMD="3">
-        <RadzenCard>
-            <RadzenText TextStyle="TextStyle.H6">Facturas Pendientes</RadzenText>
-            <RadzenText TextStyle="TextStyle.H4">5</RadzenText>
-        </RadzenCard>
-    </RadzenColumn>
-    <RadzenColumn Size="12" SizeMD="3">
-        <RadzenCard>
-            <RadzenText TextStyle="TextStyle.H6">Facturas Rechazadas</RadzenText>
-            <RadzenText TextStyle="TextStyle.H4">2</RadzenText>
-        </RadzenCard>
-    </RadzenColumn>
-</RadzenRow>
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3">Dashboard</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Cards con métricas principales -->
+    <RadzenRow class="mb-4">
+        <!-- Total de Facturas -->
+        <RadzenColumn Size="12" SizeMD="3" class="mb-4">
+            <RadzenCard class="p-4 h-100">
+                <div class="d-flex flex-column">
+                    <RadzenText TextStyle="TextStyle.H6" class="mb-2">Total Facturas</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4" class="mb-0">125</RadzenText>
+                    <div class="d-flex align-items-center mt-2">
+                        <RadzenIcon Icon="trending_up" />
+                        <RadzenText TextStyle="TextStyle.Body2" class="ml-1">+15% vs mes anterior</RadzenText>
+                    </div>
+                </div>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <!-- Monto Total -->
+        <RadzenColumn Size="12" SizeMD="3" class="mb-4">
+            <RadzenCard class="p-4 h-100">
+                <div class="d-flex flex-column">
+                    <RadzenText TextStyle="TextStyle.H6" class="mb-2">Monto Total</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4" class="mb-0">₡2,500,000</RadzenText>
+                    <div class="d-flex align-items-center mt-2">
+                        <RadzenIcon Icon="trending_up" />
+                        <RadzenText TextStyle="TextStyle.Body2" class="ml-1">+8% vs mes anterior</RadzenText>
+                    </div>
+                </div>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <!-- Facturas Pendientes -->
+        <RadzenColumn Size="12" SizeMD="3" class="mb-4">
+            <RadzenCard class="p-4 h-100">
+                <div class="d-flex flex-column">
+                    <RadzenText TextStyle="TextStyle.H6" class="mb-2">Facturas Pendientes</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4" class="mb-0">5</RadzenText>
+                    <div class="d-flex align-items-center mt-2">
+                        <RadzenIcon Icon="warning" Style="color: var(--rz-warning-darker);" />
+                        <RadzenText TextStyle="TextStyle.Body2" class="ml-1">Requieren atención</RadzenText>
+                    </div>
+                </div>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <!-- Facturas Rechazadas -->
+        <RadzenColumn Size="12" SizeMD="3" class="mb-4">
+            <RadzenCard class="p-4 h-100">
+                <div class="d-flex flex-column">
+                    <RadzenText TextStyle="TextStyle.H6" class="mb-2">Facturas Rechazadas</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4" class="mb-0">2</RadzenText>
+                    <div class="d-flex align-items-center mt-2">
+                        <RadzenIcon Icon="error" Style="color: var(--rz-danger-darker);" />
+                        <RadzenText TextStyle="TextStyle.Body2" class="ml-1">Necesitan corrección</RadzenText>
+                    </div>
+                </div>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Gráficos y tablas -->
+    <RadzenRow>
+        <!-- Gráfico de Facturación -->
+        <RadzenColumn Size="12" SizeMD="8" class="mb-4">
+            <RadzenCard class="h-100">
+                <RadzenText TextStyle="TextStyle.H6" class="mb-4">Facturación por Mes</RadzenText>
+                <RadzenChart>
+                    <RadzenLineSeries Data="@monthlyData" CategoryProperty="Month"
+                                      ValueProperty="Amount" Smooth="true" Title="Monto">
+                        <RadzenMarkers MarkerType="MarkerType.Circle" />
+                    </RadzenLineSeries>
+                    <RadzenCategoryAxis Padding="20" />
+                    <RadzenValueAxis>
+                        <RadzenGridLines Visible="true" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <!-- Estado de Facturas -->
+        <RadzenColumn Size="12" SizeMD="4" class="mb-4">
+            <RadzenCard class="h-100">
+                <RadzenText TextStyle="TextStyle.H6" class="mb-4">Estado de Facturas</RadzenText>
+                <RadzenChart>
+                    <RadzenPieSeries Data="@invoiceStatus" CategoryProperty="Status"
+                                     ValueProperty="Count" Title="Estado" />
+                    <RadzenLegend Position="LegendPosition.Bottom" />
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Tabla de Últimas Facturas -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" class="mb-4">Últimas Facturas</RadzenText>
+                <RadzenDataGrid Data="@recentInvoices" TItem="InvoiceData" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Number" Title="Número" />
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Date" Title="Fecha" />
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Client" Title="Cliente" />
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Amount" Title="Monto" />
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Status" Title="Estado">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@GetBadgeStyle(data.Status)" Text="@data.Status" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
 
 @code {
-    private List<DashboardData> facturasPorDia = new List<DashboardData>
+    private class MonthlyData
     {
-        new DashboardData { Fecha = "Lun", Cantidad = 10 },
-        new DashboardData { Fecha = "Mar", Cantidad = 15 },
-        new DashboardData { Fecha = "Mie", Cantidad = 20 },
-        new DashboardData { Fecha = "Jue", Cantidad = 18 },
-        new DashboardData { Fecha = "Vie", Cantidad = 25 }
+        public string Month { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    private class StatusData
+    {
+        public string Status { get; set; }
+        public int Count { get; set; }
+    }
+
+    private class InvoiceData
+    {
+        public string Number { get; set; }
+        public DateTime Date { get; set; }
+        public string Client { get; set; }
+        public decimal Amount { get; set; }
+        public string Status { get; set; }
+    }
+
+    private List<MonthlyData> monthlyData = new List<MonthlyData>
+    {
+        new MonthlyData { Month = "Ene", Amount = 1500000 },
+        new MonthlyData { Month = "Feb", Amount = 1800000 },
+        new MonthlyData { Month = "Mar", Amount = 2200000 },
+        new MonthlyData { Month = "Abr", Amount = 1900000 },
+        new MonthlyData { Month = "May", Amount = 2500000 },
+        new MonthlyData { Month = "Jun", Amount = 2800000 }
     };
 
-    public class DashboardData
+    private List<StatusData> invoiceStatus = new List<StatusData>
     {
-        public string Fecha { get; set; }
-        public int Cantidad { get; set; }
+        new StatusData { Status = "Aprobadas", Count = 85 },
+        new StatusData { Status = "Pendientes", Count = 5 },
+        new StatusData { Status = "Rechazadas", Count = 2 },
+        new StatusData { Status = "En Proceso", Count = 8 }
+    };
+
+    private List<InvoiceData> recentInvoices = new List<InvoiceData>
+    {
+        new InvoiceData { Number = "FE-001", Date = DateTime.Now.AddDays(-1), Client = "Cliente A", Amount = 150000, Status = "Aprobada" },
+        new InvoiceData { Number = "FE-002", Date = DateTime.Now.AddDays(-2), Client = "Cliente B", Amount = 250000, Status = "Pendiente" },
+        new InvoiceData { Number = "FE-003", Date = DateTime.Now.AddDays(-3), Client = "Cliente C", Amount = 180000, Status = "Rechazada" },
+        new InvoiceData { Number = "FE-004", Date = DateTime.Now.AddDays(-4), Client = "Cliente D", Amount = 320000, Status = "Aprobada" },
+        new InvoiceData { Number = "FE-005", Date = DateTime.Now.AddDays(-5), Client = "Cliente E", Amount = 195000, Status = "En Proceso" }
+    };
+
+    private BadgeStyle GetBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Aprobada" => BadgeStyle.Success,
+            "Pendiente" => BadgeStyle.Warning,
+            "Rechazada" => BadgeStyle.Danger,
+            "En Proceso" => BadgeStyle.Info,
+            _ => BadgeStyle.Secondary
+        };
     }
 }

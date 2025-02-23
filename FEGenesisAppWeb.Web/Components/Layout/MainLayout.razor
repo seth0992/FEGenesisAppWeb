@@ -1,63 +1,120 @@
-﻿@inherits LayoutComponentBase
-
-@* <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
- *@
+﻿@using Blazored.Toast.Configuration
+@using Microsoft.AspNetCore.Components.Authorization
+@inherits LayoutComponentBase
 
 <RadzenLayout>
     <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-            <RadzenSidebarToggle Click="@(() => sidebar1Expanded = !sidebar1Expanded)" />
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
+
+
             <RadzenLabel Text="GenesisFE Web" />
+            <div class="d-flex align-items-center ms-auto me-3">
+                <RadzenAppearanceToggle class="rz-mx-2" />
+                @* <CultureSelector /> *@
+                <AuthorizeView Context="authContext">
+                    <Authorized>
+                        <RadzenProfileMenu>
+                            <Template>
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="5">
+                                    <RadzenIcon Icon="account_circle" />
+                                    @authContext.User.Identity?.Name
+                                </RadzenStack>
+                            </Template>
+                            <ChildContent>
+                                <RadzenProfileMenuItem Text="Cerrar Sesión" Path="logout" Icon="logout" Click=@(() => NavigationManager.NavigateTo("/logout"))></RadzenProfileMenuItem>
+                            </ChildContent>
+                        </RadzenProfileMenu>
+
+                    </Authorized>
+                    <NotAuthorized>
+                        <RadzenButton Click=@(() => NavigationManager.NavigateTo("/login"))
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Size="ButtonSize.Small"
+                                      Icon="login"
+                                      Text="Iniciar Sesión" />
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+
+
         </RadzenStack>
     </RadzenHeader>
-    <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
+    <RadzenSidebar @bind-Expanded="@sidebarExpanded">
         <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="/" />
-            <RadzenPanelMenuItem Text="Facturación" Icon="receipt">
-                <RadzenPanelMenuItem Text="Nueva Factura" Path="/facturacion/nueva" Icon="add" />
-                <RadzenPanelMenuItem Text="Listado de Facturas" Path="/facturacion/listado" Icon="list" />
-            </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Clientes" Icon="people">
-                <RadzenPanelMenuItem Text="Nuevo Cliente" Path="/clientes/nuevo" Icon="person_add" />
-                <RadzenPanelMenuItem Text="Listado de Clientes" Path="/clientes/listado" Icon="list" />
-            </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Productos" Icon="inventory">
-                <RadzenPanelMenuItem Text="Nuevo Producto" Path="/productos/nuevo" Icon="add" />
-                <RadzenPanelMenuItem Text="Listado de Productos" Path="/productos/listado" Icon="list" />
-            </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Reportes" Icon="assessment" Path="/reportes" />
-            <RadzenPanelMenuItem Text="Configuración" Icon="settings" Path="/configuracion" />
+            <AuthorizeView Context="authSidebar">
+                <Authorized>
+                    <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="/" />
+
+                    <RadzenPanelMenuItem Text="Facturación" Icon="receipt">
+                        <RadzenPanelMenuItem Text="Nueva Factura" Path="/facturacion/nueva" Icon="add" />
+                        <RadzenPanelMenuItem Text="Listado de Facturas" Path="/facturacion/listado" Icon="list" />
+                        <RadzenPanelMenuItem Text="Notas de Crédito" Path="/facturacion/notas-credito" Icon="note" />
+                    </RadzenPanelMenuItem>
+
+                    <RadzenPanelMenuItem Text="Clientes" Icon="people">
+                        <RadzenPanelMenuItem Text="Nuevo Cliente" Path="/clientes/nuevo" Icon="person_add" />
+                        <RadzenPanelMenuItem Text="Listado de Clientes" Path="/clientes/listado" Icon="list" />
+                    </RadzenPanelMenuItem>
+
+                    <RadzenPanelMenuItem Text="Productos" Icon="inventory">
+                        <RadzenPanelMenuItem Text="Nuevo Producto" Path="/productos/nuevo" Icon="add" />
+                        <RadzenPanelMenuItem Text="Listado de Productos" Path="/productos/listado" Icon="list" />
+                    </RadzenPanelMenuItem>
+
+                    <RadzenPanelMenuItem Text="Reportes" Icon="assessment">
+                        <RadzenPanelMenuItem Text="Ventas por Período" Path="/reportes/ventas" Icon="bar_chart" />
+                        <RadzenPanelMenuItem Text="Clientes" Path="/reportes/clientes" Icon="people" />
+                        <RadzenPanelMenuItem Text="Productos" Path="/reportes/productos" Icon="inventory" />
+                    </RadzenPanelMenuItem>
+
+                    <AuthorizeView Roles="SuperAdmin,TenantAdmin" Context="authAdmin">
+                        <Authorized>
+                            <RadzenPanelMenuItem Text="Configuración" Icon="settings">
+                                <RadzenPanelMenuItem Text="Empresa" Path="/configuracion/empresa" Icon="business" />
+                                <RadzenPanelMenuItem Text="Usuarios" Path="/configuracion/usuarios" Icon="people" />
+                                <RadzenPanelMenuItem Text="Certificados" Path="/configuracion/certificados" Icon="security" />
+                            </RadzenPanelMenuItem>
+                        </Authorized>
+                    </AuthorizeView>
+                </Authorized>
+            </AuthorizeView>
         </RadzenPanelMenu>
     </RadzenSidebar>
     <RadzenBody>
-        <div class="container-fluid">
+        <div class="rz-p-4">
             @Body
         </div>
     </RadzenBody>
+    <RadzenFooter>
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <span>© 2024 GenesisFE Web - Versión 1.0</span>
+            <span>Desarrollado por seth</span>
+        </div>
+    </RadzenFooter>
 </RadzenLayout>
 
+<RadzenDialog />
+<RadzenNotification />
+<RadzenTooltip />
+<RadzenContextMenu />
+
+<BlazoredToasts Position="ToastPosition.TopCenter"
+                Timeout="10"
+                IconType="IconType.FontAwesome"
+                SuccessClass="success-toast-override"
+                SuccessIcon="fa fa-thumbs-up"
+                ErrorIcon="fa fa-bug" />
+
 <div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
+    Ha ocurrido un error en la aplicación.
+    <a href="" class="reload">Recargar</a>
     <a class="dismiss">🗙</a>
 </div>
 
 @code {
-    bool sidebar1Expanded = true;
+    [Inject]
+    public NavigationManager NavigationManager { get; set; } = null!;
+
+    private bool sidebarExpanded = true;
 }
-
-

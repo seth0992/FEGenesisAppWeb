@@ -1,0 +1,246 @@
+﻿@page "/clientes/detalle/{Id:int}"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Detalle del Cliente - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenButton Icon="arrow_back" Click="@(() => NavigationManager.NavigateTo("/clientes/listado"))" />
+                <RadzenText TextStyle="TextStyle.H3">Detalle del Cliente</RadzenText>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeMD="8">
+            <!-- Información Principal -->
+            <RadzenCard class="mb-4">
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                     JustifyContent="JustifyContent.SpaceBetween" class="mb-4">
+                            <RadzenStack>
+                                <RadzenText TextStyle="TextStyle.H5">@customer.Name</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body2">@customer.CommercialName</RadzenText>
+                            </RadzenStack>
+                            <RadzenBadge BadgeStyle="@(customer.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)"
+                                         Text="@(customer.IsActive ? "Activo" : "Inactivo")" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Tipo de Identificación</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@GetIdentificationTypeDescription(customer.IdentificationType)</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Número de Identificación</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@customer.Identification</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Correo Electrónico</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@customer.Email</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Teléfono</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">@($"{customer.PhoneCode} {customer.Phone}")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12">
+                        <RadzenStack class="mb-4">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Dirección</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1">
+                                @customer.Address<br />
+                                @GetFullLocation()
+                            </RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                    <RadzenButton Icon="edit" Text="Editar" ButtonStyle="ButtonStyle.Light"
+                                  Click="@(() => NavigationManager.NavigateTo($"/clientes/editar/{Id}"))" />
+                </RadzenStack>
+            </RadzenCard>
+
+            <!-- Historial de Facturas -->
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Historial de Facturas</RadzenText>
+                <RadzenDataGrid Data="@invoices" TItem="InvoiceData" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Number" Title="Número" />
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Date" Title="Fecha">
+                            <Template Context="data">
+                                @data.Date.ToShortDateString()
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Amount" Title="Monto">
+                            <Template Context="data">
+                                @data.Amount.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="InvoiceData" Property="Status" Title="Estado">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@GetInvoiceStatusStyle(data.Status)" Text="@data.Status" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="InvoiceData" Width="100px">
+                            <Template Context="data">
+                                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                              Click="@(() => ViewInvoice(data.Number))" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="4">
+            <!-- Estadísticas del Cliente -->
+            <RadzenCard class="mb-4">
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Estadísticas</RadzenText>
+                <RadzenStack Gap="1rem">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <RadzenText TextStyle="TextStyle.Body2">Total Facturado</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H6">₡4,500,000</RadzenText>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <RadzenText TextStyle="TextStyle.Body2">Facturas Emitidas</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H6">15</RadzenText>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <RadzenText TextStyle="TextStyle.Body2">Facturas Pendientes</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H6">2</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+
+            <!-- Ubicación en Mapa (Placeholder) -->
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Ubicación</RadzenText>
+                <div style="background-color: #f5f5f5; height: 200px; display: flex; align-items: center; justify-content: center;">
+                    <RadzenIcon Icon="map" Style="font-size: 48px; color: var(--rz-secondary-light);" />
+                </div>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private CustomerDetailsModel customer = new();
+    private List<InvoiceData> invoices = new();
+
+    protected override void OnInitialized()
+    {
+        // Cargar datos de prueba
+        LoadCustomerData();
+        LoadInvoicesData();
+    }
+
+    private void LoadCustomerData()
+    {
+        // Datos de prueba
+        customer = new CustomerDetailsModel
+            {
+                Name = "Empresa A S.A.",
+                CommercialName = "Empresa A",
+                IdentificationType = "02",
+                Identification = "3101123456",
+                Email = "info@empresaa.com",
+                PhoneCode = "+506",
+                Phone = "2222-1111",
+                Province = "San José",
+                Canton = "Central",
+                District = "Carmen",
+                Address = "100 mts Norte del Parque Central",
+                IsActive = true
+            };
+    }
+
+    private void LoadInvoicesData()
+    {
+        // Datos de prueba
+        invoices = new List<InvoiceData>
+        {
+            new() { Number = "FE-001", Date = DateTime.Now.AddDays(-1), Amount = 150000, Status = "Aprobada" },
+            new() { Number = "FE-002", Date = DateTime.Now.AddDays(-5), Amount = 250000, Status = "Pendiente" },
+            new() { Number = "FE-003", Date = DateTime.Now.AddDays(-10), Amount = 180000, Status = "Aprobada" },
+            new() { Number = "FE-004", Date = DateTime.Now.AddDays(-15), Amount = 320000, Status = "Rechazada" },
+            new() { Number = "FE-005", Date = DateTime.Now.AddDays(-20), Amount = 195000, Status = "Aprobada" }
+        };
+    }
+
+    private string GetIdentificationTypeDescription(string id)
+    {
+        return id switch
+        {
+            "01" => "Cédula Física",
+            "02" => "Cédula Jurídica",
+            "03" => "DIMEX",
+            "04" => "NITE",
+            _ => id
+        };
+    }
+
+    private string GetFullLocation()
+    {
+        return $"{customer.District}, {customer.Canton}, {customer.Province}";
+    }
+
+    private BadgeStyle GetInvoiceStatusStyle(string status)
+    {
+        return status switch
+        {
+            "Aprobada" => BadgeStyle.Success,
+            "Pendiente" => BadgeStyle.Warning,
+            "Rechazada" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    private void ViewInvoice(string number)
+    {
+        // Implementar navegación a la factura
+        ToastService.ShowInfo($"Ver factura {number}");
+    }
+
+    private class CustomerDetailsModel
+    {
+        public string Name { get; set; }
+        public string CommercialName { get; set; }
+        public string IdentificationType { get; set; }
+        public string Identification { get; set; }
+        public string Email { get; set; }
+        public string PhoneCode { get; set; }
+        public string Phone { get; set; }
+        public string Province { get; set; }
+        public string Canton { get; set; }
+        public string District { get; set; }
+        public string Address { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private class InvoiceData
+    {
+        public string Number { get; set; }
+        public DateTime Date { get; set; }
+        public decimal Amount { get; set; }
+        public string Status { get; set; }
+    }
+}

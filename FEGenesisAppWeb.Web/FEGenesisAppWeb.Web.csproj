@@ -18,4 +18,8 @@
     <ProjectReference Include="..\FEGenesisAppWeb.ServiceDefaults\FEGenesisAppWeb.ServiceDefaults.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Components\BaseComponent\" />
+	</ItemGroup>
+
 </Project>

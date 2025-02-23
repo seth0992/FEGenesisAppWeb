@@ -1,0 +1,365 @@
+﻿@page "/clientes/nuevo"
+@page "/clientes/editar/{Id:int}"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>@(Id == null ? "Nuevo Cliente" : "Editar Cliente") - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenButton Icon="arrow_back" Click="@(() => NavigationManager.NavigateTo("/clientes/listado"))" />
+                <RadzenText TextStyle="TextStyle.H3">@(Id == null ? "Nuevo Cliente" : "Editar Cliente")</RadzenText>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenTemplateForm TItem="CustomerFormModel" Data=@model Submit=@OnSubmit>
+                <RadzenCard>
+                    <RadzenRow>
+                        <!-- Información General -->
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Información General</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Tipo de Identificación" />
+                                <RadzenDropDown @bind-Value=@model.IdentificationType Data=@identificationTypes
+                                              TextProperty="Description" ValueProperty="ID" Class="w-100"
+                                              Change=@(args => ValidateIdentification()) />
+                                <RadzenRequiredValidator Component="IdentificationType" Text="El tipo de identificación es requerido" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Número de Identificación" />
+                                <RadzenTextBox @bind-Value=@model.Identification Class="w-100" 
+                                             Change=@(args => ValidateIdentification()) />
+                                <RadzenRequiredValidator Component="Identification" Text="La identificación es requerida" />
+                                @if (!string.IsNullOrEmpty(identificationError))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-danger);">
+                                        @identificationError
+                                    </RadzenText>
+                                }
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Nombre o Razón Social" />
+                                <RadzenTextBox @bind-Value=@model.Name Class="w-100" />
+                                <RadzenRequiredValidator Component="Name" Text="El nombre es requerido" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Nombre Comercial" />
+                                <RadzenTextBox @bind-Value=@model.CommercialName Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Información de Contacto -->
+                        <RadzenColumn Size="12" Class="mt-4">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Información de Contacto</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Correo Electrónico" />
+                                <RadzenTextBox @bind-Value=@model.Email Class="w-100" />
+                                <RadzenRequiredValidator Component="Email" Text="El correo es requerido" />
+                                <RadzenEmailValidator Component="Email" Text="Formato de correo inválido" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="3" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Código País" />
+                                <RadzenTextBox @bind-Value=@model.PhoneCode Placeholder="+506" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="3" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Teléfono" />
+                                <RadzenTextBox @bind-Value=@model.Phone Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Ubicación -->
+                        <RadzenColumn Size="12" Class="mt-4">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Ubicación</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Provincia" />
+                                <RadzenDropDown @bind-Value=@model.ProvinceId Data=@provinces
+                                              TextProperty="ProvinceName" ValueProperty="ProvinceID" Class="w-100"
+                                              Change=@LoadCantons />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Cantón" />
+                                <RadzenDropDown @bind-Value=@model.CantonId Data=@cantons
+                                              TextProperty="CantonName" ValueProperty="CantonID" Class="w-100"
+                                              Change=@LoadDistricts Disabled=@(model.ProvinceId == 0) />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Distrito" />
+                                <RadzenDropDown @bind-Value=@model.DistrictId Data=@districts
+                                              TextProperty="DistrictName" ValueProperty="DistrictID" Class="w-100"
+                                              Disabled=@(model.CantonId == 0) />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Dirección Exacta" />
+                                <RadzenTextArea @bind-Value=@model.Address Rows="3" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Botones -->
+                        <RadzenColumn Size="12" Class="mt-4">
+                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" 
+                                            Click="@(() => NavigationManager.NavigateTo("/clientes/listado"))" />
+                                <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" 
+                                            Text="Guardar" IsBusy=@isSaving BusyText="Guardando..." />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenCard>
+            </RadzenTemplateForm>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private CustomerFormModel model = new();
+    private string identificationError;
+    private bool isSaving;
+
+    // Catálogos
+    private List<IdentificationType> identificationTypes = new();
+    private List<Province> provinces = new();
+    private List<Canton> cantons = new();
+    private List<District> districts = new();
+
+    protected override void OnInitialized()
+    {
+        LoadInitialData();
+
+        if (Id.HasValue)
+        {
+            LoadCustomer();
+        }
+    }
+
+    private void LoadInitialData()
+    {
+        // Datos de prueba - Tipos de identificación
+        identificationTypes = new List<IdentificationType>
+        {
+            new() { ID = "01", Description = "Cédula Física" },
+            new() { ID = "02", Description = "Cédula Jurídica" },
+            new() { ID = "03", Description = "DIMEX" },
+            new() { ID = "04", Description = "NITE" }
+        };
+
+        // Datos de prueba - Provincias
+        provinces = new List<Province>
+        {
+            new() { ProvinceID = 1, ProvinceName = "San José" },
+            new() { ProvinceID = 2, ProvinceName = "Alajuela" },
+            new() { ProvinceID = 3, ProvinceName = "Cartago" },
+            new() { ProvinceID = 4, ProvinceName = "Heredia" }
+        };
+    }
+
+    private void LoadCustomer()
+    {
+        // Datos de prueba para edición
+        if (Id == 1)
+        {
+            model = new CustomerFormModel
+            {
+                IdentificationType = "02",
+                Identification = "3101123456",
+                Name = "Empresa A S.A.",
+                CommercialName = "Empresa A",
+                Email = "info@empresaa.com",
+                PhoneCode = "+506",
+                Phone = "2222-1111",
+                ProvinceId = 1,
+                CantonId = 1,
+                DistrictId = 1,
+                Address = "Dirección de prueba"
+            };
+
+            LoadCantons();
+            LoadDistricts();
+        }
+    }
+
+    private void LoadCantons()
+    {
+        if (model.ProvinceId > 0)
+        {
+            // Datos de prueba - Cantones
+            cantons = new List<Canton>
+            {
+                new() { CantonID = 1, CantonName = "Central", ProvinceId = model.ProvinceId },
+                new() { CantonID = 2, CantonName = "Escazú", ProvinceId = model.ProvinceId },
+                new() { CantonID = 3, CantonName = "Desamparados", ProvinceId = model.ProvinceId }
+            };
+        }
+        else
+        {
+            cantons.Clear();
+        }
+        districts.Clear();
+        model.CantonId = 0;
+        model.DistrictId = 0;
+    }
+
+    private void LoadDistricts()
+    {
+        if (model.CantonId > 0)
+        {
+            // Datos de prueba - Distritos
+            districts = new List<District>
+            {
+                new() { DistrictID = 1, DistrictName = "Carmen", CantonId = model.CantonId },
+                new() { DistrictID = 2, DistrictName = "Merced", CantonId = model.CantonId },
+                new() { DistrictID = 3, DistrictName = "Hospital", CantonId = model.CantonId }
+            };
+        }
+        else
+        {
+            districts.Clear();
+        }
+        model.DistrictId = 0;
+    }
+
+    private void ValidateIdentification()
+    {
+        identificationError = "";
+
+        if (string.IsNullOrEmpty(model.IdentificationType) || string.IsNullOrEmpty(model.Identification))
+            return;
+
+        // Validaciones según tipo de identificación
+        switch (model.IdentificationType)
+        {
+            case "01": // Cédula Física
+                if (!System.Text.RegularExpressions.Regex.IsMatch(model.Identification, @"^\d{9}$"))
+                    identificationError = "La cédula física debe tener 9 dígitos";
+                break;
+
+            case "02": // Cédula Jurídica
+                if (!System.Text.RegularExpressions.Regex.IsMatch(model.Identification, @"^[2-3]\d{9}$"))
+                    identificationError = "La cédula jurídica debe tener 10 dígitos y empezar con 2 o 3";
+                break;
+
+            case "03": // DIMEX
+                if (!System.Text.RegularExpressions.Regex.IsMatch(model.Identification, @"^\d{11,12}$"))
+                    identificationError = "El DIMEX debe tener entre 11 y 12 dígitos";
+                break;
+
+            case "04": // NITE
+                if (!System.Text.RegularExpressions.Regex.IsMatch(model.Identification, @"^10\d{8}$"))
+                    identificationError = "El NITE debe empezar con 10 y tener 10 dígitos en total";
+                break;
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        try
+        {
+            isSaving = true;
+
+            // Validar identificación antes de guardar
+            ValidateIdentification();
+            if (!string.IsNullOrEmpty(identificationError))
+            {
+                ToastService.ShowError("Por favor corrija los errores antes de guardar");
+                return;
+            }
+
+            // Aquí implementaremos la llamada a la API
+            await Task.Delay(1000); // Simulación de llamada
+
+            ToastService.ShowSuccess("Cliente guardado exitosamente");
+            NavigationManager.NavigateTo("/clientes/listado");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al guardar el cliente: " + ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    // Clases del modelo
+    private class CustomerFormModel
+    {
+        public string IdentificationType { get; set; }
+        public string Identification { get; set; }
+        public string Name { get; set; }
+        public string CommercialName { get; set; }
+        public string Email { get; set; }
+        public string PhoneCode { get; set; }
+        public string Phone { get; set; }
+        public int ProvinceId { get; set; }
+        public int CantonId { get; set; }
+        public int DistrictId { get; set; }
+        public string Address { get; set; }
+    }
+
+    private class IdentificationType
+    {
+        public string ID { get; set; }
+        public string Description { get; set; }
+    }
+
+    private class Province
+    {
+        public int ProvinceID { get; set; }
+        public string ProvinceName { get; set; }
+    }
+
+    private class Canton
+    {
+        public int CantonID { get; set; }
+        public string CantonName { get; set; }
+        public int ProvinceId { get; set; }
+    }
+
+    private class District
+    {
+        public int DistrictID { get; set; }
+        public string DistrictName { get; set; }
+        public int CantonId { get; set; }
+        public int RegionID { get; set; }
+    }
+ }

@@ -14,6 +14,22 @@ builder.AddServiceDefaults();
 builder.Services.AddAuthenticationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddControllers();
+builder.Services.AddLocalization(); //Agregar la localizacion 
+
+// Configuración de autenticación para Blazor Server
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "ServerAuth";
+    options.DefaultChallengeScheme = "ServerAuth";
+})
+.AddCookie("ServerAuth", options =>
+{
+    options.Cookie.Name = "BlazorServerAuth";
+    options.LoginPath = "/login";
+    options.LogoutPath = "/logout";
+});
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -43,6 +59,10 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 
 app.UseOutputCache();
 
