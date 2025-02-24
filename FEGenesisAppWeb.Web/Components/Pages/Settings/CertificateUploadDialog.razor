@@ -1,0 +1,111 @@
+﻿@inject DialogService DialogService
+@inject IToastService ToastService
+
+<RadzenTemplateForm TItem="CertificateUploadModel" Data=@model Submit=@OnSubmit>
+    <RadzenStack Gap="1rem">
+        <RadzenStack>
+            <RadzenLabel Text="Certificate Name" />
+            <RadzenTextBox @bind-Value=@model.Name Class="w-100" />
+            <RadzenRequiredValidator Component="Name" Text="Name is required" />
+        </RadzenStack>
+
+        <RadzenStack>
+            <RadzenLabel Text="Certificate File (.p12)" />
+            <RadzenUpload Accept=".p12" Multiple="false" Auto="false" Progress=@OnProgress
+                          Change=@OnFileSelected />
+            @if (string.IsNullOrEmpty(model.FileName))
+            {
+                <RadzenRequiredValidator Text="Certificate file is required" />
+            }
+            else
+            {
+                <RadzenText TextStyle="TextStyle.Caption">Selected file: @model.FileName</RadzenText>
+            }
+        </RadzenStack>
+
+        <RadzenStack>
+            <RadzenLabel Text="Certificate Password" />
+            <RadzenPassword @bind-Value=@model.Password Class="w-100" />
+            <RadzenRequiredValidator Component="Password" Text="Password is required" />
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel" Click=@(() => DialogService.Close(false)) />
+            <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary"
+                          Text="Upload" IsBusy=@isSaving BusyText="Uploading..." />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenTemplateForm>
+
+@code {
+    private CertificateUploadModel model = new();
+    private bool isSaving;
+
+    private void OnProgress(UploadProgressArgs args)
+    {
+        // Handle upload progress if needed
+        Console.WriteLine($"File: {args.Progress}% uploaded.");
+    }
+
+    private async Task OnFileSelected(UploadChangeEventArgs args)
+    {
+        try
+        {
+            if (args.Files.Any())
+            {
+                var file = args.Files.First();
+                model.FileName = file.Name;
+
+                // Aquí puedes guardar temporalmente el archivo si es necesario
+                using var ms = new MemoryStream();
+                await file.OpenReadStream().CopyToAsync(ms);
+                model.FileContent = ms.ToArray();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error processing file: {ex.Message}");
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(model.FileName) || model.FileContent == null)
+            {
+                ToastService.ShowError("Please select a certificate file");
+                return;
+            }
+
+            isSaving = true;
+            // API call will go here
+            await Task.Delay(1000); // Simulate API call
+
+            // Aquí implementaremos la llamada a la API para subir el certificado
+            // using var content = new MultipartFormDataContent();
+            // content.Add(new ByteArrayContent(model.FileContent), "file", model.FileName);
+            // content.Add(new StringContent(model.Name), "name");
+            // content.Add(new StringContent(model.Password), "password");
+            // await httpClient.PostAsync("api/certificates", content);
+
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error uploading certificate: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class CertificateUploadModel
+    {
+        public string Name { get; set; }
+        public string Password { get; set; }
+        public string FileName { get; set; }
+        public byte[] FileContent { get; set; }
+    }
+}

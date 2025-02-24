@@ -1,0 +1,318 @@
+﻿@page "/configuration/company"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Company Settings - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3">Company Settings</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenTemplateForm TItem="CompanySettingsModel" Data=@model Submit=@OnSubmit>
+                <RadzenCard>
+                    <!-- General Information -->
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">General Information</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Company Name" />
+                                <RadzenTextBox @bind-Value=@model.CompanyName Class="w-100" />
+                                <RadzenRequiredValidator Component="CompanyName" Text="Company name is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Trade Name" />
+                                <RadzenTextBox @bind-Value=@model.CommercialName Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Tax ID" />
+                                <RadzenTextBox @bind-Value=@model.TaxId Class="w-100" />
+                                <RadzenRequiredValidator Component="TaxId" Text="Tax ID is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Email" />
+                                <RadzenTextBox @bind-Value=@model.Email Class="w-100" />
+                                <RadzenRequiredValidator Component="Email" Text="Email is required" />
+                                <RadzenEmailValidator Component="Email" Text="Invalid email format" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Location -->
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4 mt-4">Location</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Province" />
+                                <RadzenDropDown @bind-Value=@model.ProvinceId Data=@provinces
+                                                TextProperty="ProvinceName" ValueProperty="ProvinceID" Class="w-100"
+                                                Change=@LoadCantons />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Canton" />
+                                <RadzenDropDown @bind-Value=@model.CantonId Data=@cantons
+                                                TextProperty="CantonName" ValueProperty="CantonID" Class="w-100"
+                                                Change=@LoadDistricts Disabled=@(model.ProvinceId == 0) />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="District" />
+                                <RadzenDropDown @bind-Value=@model.DistrictId Data=@districts
+                                                TextProperty="DistrictName" ValueProperty="DistrictID" Class="w-100"
+                                                Disabled=@(model.CantonId == 0) />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Full Address" />
+                                <RadzenTextArea @bind-Value=@model.Address Rows="3" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Billing Settings -->
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4 mt-4">Billing Settings</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Default Currency" />
+                                <RadzenDropDown @bind-Value=@model.DefaultCurrency Data=@currencies
+                                                TextProperty="Description" ValueProperty="Code" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Default Payment Term (days)" />
+                                <RadzenNumeric @bind-Value=@model.DefaultPaymentTerm Min="0" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Invoice Prefix" />
+                                <RadzenTextBox @bind-Value=@model.InvoicePrefix MaxLength="10" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Company Logo -->
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4 mt-4">Company Logo</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenUpload Accept="image/*" Multiple="false" Max="1" Size="10000000"
+                                              Change=@OnLogoChange />
+                                @if (!string.IsNullOrEmpty(model.LogoUrl))
+                                {
+                                    <img src="@model.LogoUrl" style="max-width: 200px; max-height: 200px;" />
+                                }
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Action Buttons -->
+                        <RadzenColumn Size="12" Class="mt-4">
+                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel"
+                                              Click="@(() => NavigationManager.NavigateTo("/"))" />
+                                <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary"
+                                              Text="Save" IsBusy=@isSaving BusyText="Saving..." />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenCard>
+            </RadzenTemplateForm>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    private CompanySettingsModel model = new();
+    private bool isSaving;
+
+    // Catálogos
+    private List<Province> provinces = new();
+    private List<Canton> cantons = new();
+    private List<District> districts = new();
+    private List<Currency> currencies = new();
+
+    protected override void OnInitialized()
+    {
+        LoadInitialData();
+        LoadCompanySettings();
+    }
+
+    private void LoadInitialData()
+    {
+        // Datos de prueba - Provincias
+        provinces = new List<Province>
+        {
+            new() { ProvinceID = 1, ProvinceName = "San José" },
+            new() { ProvinceID = 2, ProvinceName = "Alajuela" },
+            new() { ProvinceID = 3, ProvinceName = "Cartago" },
+            new() { ProvinceID = 4, ProvinceName = "Heredia" }
+        };
+
+        // Datos de prueba - Monedas
+        currencies = new List<Currency>
+        {
+            new() { Code = "CRC", Description = "Colón" },
+            new() { Code = "USD", Description = "Dólar" },
+            new() { Code = "EUR", Description = "Euro" }
+        };
+    }
+
+    private void LoadCompanySettings()
+    {
+        // Datos de prueba
+        model = new CompanySettingsModel
+            {
+                CompanyName = "Empresa Demo S.A.",
+                CommercialName = "Demo Company",
+                TaxId = "3101123456",
+                Email = "info@demo.com",
+                ProvinceId = 1,
+                CantonId = 1,
+                DistrictId = 1,
+                Address = "100 mts Norte del Parque Central",
+                DefaultCurrency = "CRC",
+                DefaultPaymentTerm = 30,
+                InvoicePrefix = "FE",
+                LogoUrl = "/images/demo-logo.png"
+            };
+
+        LoadCantons();
+        LoadDistricts();
+    }
+
+    private void LoadCantons()
+    {
+        if (model.ProvinceId > 0)
+        {
+            // Datos de prueba - Cantones
+            cantons = new List<Canton>
+            {
+                new() { CantonID = 1, CantonName = "Central", ProvinceId = model.ProvinceId },
+                new() { CantonID = 2, CantonName = "Escazú", ProvinceId = model.ProvinceId },
+                new() { CantonID = 3, CantonName = "Desamparados", ProvinceId = model.ProvinceId }
+            };
+        }
+        else
+        {
+            cantons.Clear();
+        }
+        districts.Clear();
+        model.CantonId = 0;
+        model.DistrictId = 0;
+    }
+
+    private void LoadDistricts()
+    {
+        if (model.CantonId > 0)
+        {
+            // Datos de prueba - Distritos
+            districts = new List<District>
+            {
+                new() { DistrictID = 1, DistrictName = "Carmen", CantonId = model.CantonId },
+                new() { DistrictID = 2, DistrictName = "Merced", CantonId = model.CantonId },
+                new() { DistrictID = 3, DistrictName = "Hospital", CantonId = model.CantonId }
+            };
+        }
+        else
+        {
+            districts.Clear();
+        }
+        model.DistrictId = 0;
+    }
+
+    private async Task OnLogoChange(UploadChangeEventArgs args)
+    {
+        // Aquí se implementará la lógica para manejar la subida del logo
+        ToastService.ShowInfo("Implementar carga de logo");
+    }
+
+    private async Task OnSubmit()
+    {
+        try
+        {
+            isSaving = true;
+            await Task.Delay(1000); // Simulación de guardado
+            ToastService.ShowSuccess("Configuración guardada exitosamente");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error al guardar la configuración: " + ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class CompanySettingsModel
+    {
+        public string CompanyName { get; set; }
+        public string CommercialName { get; set; }
+        public string TaxId { get; set; }
+        public string Email { get; set; }
+        public int ProvinceId { get; set; }
+        public int CantonId { get; set; }
+        public int DistrictId { get; set; }
+        public string Address { get; set; }
+        public string DefaultCurrency { get; set; }
+        public int DefaultPaymentTerm { get; set; }
+        public string InvoicePrefix { get; set; }
+        public string LogoUrl { get; set; }
+    }
+
+    private class Province
+    {
+        public int ProvinceID { get; set; }
+        public string ProvinceName { get; set; }
+    }
+
+    private class Canton
+    {
+        public int CantonID { get; set; }
+        public string CantonName { get; set; }
+        public int ProvinceId { get; set; }
+    }
+
+    private class District
+    {
+        public int DistrictID { get; set; }
+        public string DistrictName { get; set; }
+        public int CantonId { get; set; }
+    }
+
+    private class Currency
+    {
+        public string Code { get; set; }
+        public string Description { get; set; }
+    }
+}

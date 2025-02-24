@@ -1,0 +1,212 @@
+﻿@page "/configuration/email"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Email Settings - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3">Email Settings</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenTemplateForm TItem="EmailSettingsModel" Data=@model Submit=@OnSubmit>
+                <RadzenCard>
+                    <!-- SMTP Settings -->
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">SMTP Server Configuration</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="SMTP Server" />
+                                <RadzenTextBox @bind-Value=@model.SmtpServer Class="w-100" />
+                                <RadzenRequiredValidator Component="SmtpServer" Text="SMTP server is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Port" />
+                                <RadzenNumeric @bind-Value=@model.SmtpPort Min="1" Max="65535" Class="w-100" />
+                                <RadzenRequiredValidator Component="SmtpPort" Text="Port is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Username" />
+                                <RadzenTextBox @bind-Value=@model.SmtpUsername Class="w-100" />
+                                <RadzenRequiredValidator Component="SmtpUsername" Text="Username is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Password" />
+                                <RadzenPassword @bind-Value=@model.SmtpPassword Class="w-100" />
+                                <RadzenRequiredValidator Component="SmtpPassword" Text="Password is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenCheckBox @bind-Value=@model.EnableSsl Name="EnableSsl" />
+                                <RadzenLabel Text="Enable SSL/TLS" Component="EnableSsl" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Email Templates -->
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4 mt-4">Email Templates</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Invoice Template" />
+                                <RadzenTextArea @bind-Value=@model.InvoiceTemplate Rows="5" Class="w-100" />
+                                <RadzenText TextStyle="TextStyle.Caption">
+                                    Available variables: {CustomerName}, {InvoiceNumber}, {Total}, {Date}
+                                </RadzenText>
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Receipt Template" />
+                                <RadzenTextArea @bind-Value=@model.ReceiptTemplate Rows="5" Class="w-100" />
+                                <RadzenText TextStyle="TextStyle.Caption">
+                                    Available variables: {CustomerName}, {ReceiptNumber}, {Total}, {Date}
+                                </RadzenText>
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Test Email -->
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4 mt-4">Test Configuration</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Test Email Address" />
+                                <RadzenTextBox @bind-Value=@testEmail Class="w-100" />
+                                <RadzenEmailValidator Component="TestEmail" Text="Invalid email format" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenButton Text="Send Test Email" Icon="send" ButtonStyle="ButtonStyle.Secondary"
+                                            Click=@SendTestEmail Class="mt-4" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <!-- Action Buttons -->
+                        <RadzenColumn Size="12" Class="mt-4">
+                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel"
+                                            Click="@(() => NavigationManager.NavigateTo("/"))" />
+                                <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary"
+                                            Text="Save" IsBusy=@isSaving BusyText="Saving..." />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenCard>
+            </RadzenTemplateForm>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    private EmailSettingsModel model = new();
+    private string testEmail = "";
+    private bool isSaving;
+
+    protected override void OnInitialized()
+    {
+        LoadEmailSettings();
+    }
+
+    private void LoadEmailSettings()
+    {
+        // Sample data - Replace with API call when implemented
+        model = new EmailSettingsModel
+            {
+                SmtpServer = "smtp.gmail.com",
+                SmtpPort = 587,
+                SmtpUsername = "demo@genesisfe.com",
+                SmtpPassword = "********",
+                EnableSsl = true,
+                InvoiceTemplate = @"Dear {CustomerName},
+
+Please find attached your invoice #{InvoiceNumber} for {Total}, dated {Date}.
+
+Thank you for your business!
+
+Best regards,
+{CompanyName}",
+                ReceiptTemplate = @"Dear {CustomerName},
+
+This email confirms receipt of payment for invoice #{ReceiptNumber}, amount {Total}, dated {Date}.
+
+Thank you for your business!
+
+Best regards,
+{CompanyName}"
+            };
+    }
+
+    private async Task SendTestEmail()
+    {
+        if (string.IsNullOrEmpty(testEmail))
+        {
+            ToastService.ShowError("Please enter a test email address");
+            return;
+        }
+
+        try
+        {
+            // API call will go here
+            await Task.Delay(2000); // Simulate API call
+            ToastService.ShowSuccess($"Test email sent to {testEmail}");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error sending test email: {ex.Message}");
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        try
+        {
+            isSaving = true;
+            // API call will go here
+            await Task.Delay(1000); // Simulate API call
+            ToastService.ShowSuccess("Email settings saved successfully");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error saving email settings: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class EmailSettingsModel
+    {
+        public string SmtpServer { get; set; }
+        public int SmtpPort { get; set; }
+        public string SmtpUsername { get; set; }
+        public string SmtpPassword { get; set; }
+        public bool EnableSsl { get; set; }
+        public string InvoiceTemplate { get; set; }
+        public string ReceiptTemplate { get; set; }
+    }
+}

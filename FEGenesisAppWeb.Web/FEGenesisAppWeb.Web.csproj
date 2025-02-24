@@ -20,6 +20,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Components\BaseComponent\" />
+	  <Folder Include="Components\Pages\Notifications\" />
 	</ItemGroup>
 
 </Project>

@@ -1,0 +1,330 @@
+﻿@page "/reports/products"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Product Analysis Report - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3">Product Analysis Report</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Filtros para el análisis de productos -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                    <RadzenDatePicker @bind-Value=@startDate
+                                      Placeholder="Start Date"
+                                      DateFormat="dd/MM/yyyy"
+                                      Class="w-100"
+                                      Style="max-width: 200px;" />
+
+                    <RadzenDatePicker @bind-Value=@endDate
+                                      Placeholder="End Date"
+                                      DateFormat="dd/MM/yyyy"
+                                      Class="w-100"
+                                      Style="max-width: 200px;" />
+
+                    <RadzenDropDown Data=@productCategories
+                                    @bind-Value=@selectedCategory
+                                    TextProperty="Name"
+                                    ValueProperty="Id"
+                                    AllowClear="true"
+                                    Placeholder="Product Category"
+                                    Class="w-100"
+                                    Style="max-width: 200px;" />
+
+                    <RadzenDropDown Data=@taxTypes
+                                    @bind-Value=@selectedTaxType
+                                    TextProperty="Name"
+                                    ValueProperty="Id"
+                                    AllowClear="true"
+                                    Placeholder="Tax Type"
+                                    Class="w-100"
+                                    Style="max-width: 200px;" />
+
+                    <RadzenButton Text="Generate Report"
+                                  Icon="search"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Click=@GenerateReport />
+
+                    <RadzenButton Text="Export"
+                                  Icon="file_download"
+                                  ButtonStyle="ButtonStyle.Secondary"
+                                  Click=@ExportReport />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Tarjetas de resumen -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Total Products</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">248</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="add_circle" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">15 new this period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Best Selling</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">Product A</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">425 units sold</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Highest Revenue</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">₡2,850,000</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="attach_money" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">From Service B</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Average Margin</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">32%</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">+2% vs last period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Gráficos de análisis -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Top 10 Products by Revenue</RadzenText>
+                <RadzenChart>
+                    <RadzenBarSeries Data="@topProducts"
+                                     CategoryProperty="Name"
+                                     ValueProperty="Revenue"
+                                     Title="Revenue" />
+                    <RadzenValueAxis>
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="Revenue (₡)" />
+                    </RadzenValueAxis>
+                    <RadzenCategoryAxis>
+                        <RadzenAxisTitle Text="Product" />
+                    </RadzenCategoryAxis>
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Revenue Distribution by Category</RadzenText>
+                <RadzenChart>
+                    <RadzenPieSeries Data="@categoryDistribution"
+                                     CategoryProperty="Category"
+                                     ValueProperty="Revenue"
+                                     Title="Categories" />
+                    <RadzenLegend Position="LegendPosition.Bottom" />
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Tabla detallada de productos -->
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Product Details</RadzenText>
+                <RadzenDataGrid Data="@productDetails"
+                                TItem="ProductDetail"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Code" Title="Code" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Name" Title="Name" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Category" Title="Category" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="UnitPrice" Title="Unit Price">
+                            <Template Context="data">
+                                @data.UnitPrice.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="UnitsSold" Title="Units Sold" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Revenue" Title="Revenue">
+                            <Template Context="data">
+                                @data.Revenue.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Margin" Title="Margin">
+                            <Template Context="data">
+                                @data.Margin.ToString("P1")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="TaxType" Title="Tax Type" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Status" Title="Status">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@GetProductStatusBadgeStyle(data.Status)"
+                                             Text="@data.Status" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    private DateTime? startDate = DateTime.Now.AddDays(-30);
+    private DateTime? endDate = DateTime.Now;
+    private string? selectedCategory;
+    private string? selectedTaxType;
+    private List<CategoryModel> productCategories = new();
+    private List<TaxTypeModel> taxTypes = new();
+    private List<TopProductModel> topProducts = new();
+    private List<CategoryDistribution> categoryDistribution = new();
+    private List<ProductDetail> productDetails = new();
+
+    protected override void OnInitialized()
+    {
+        LoadMockData();
+    }
+
+    private void LoadMockData()
+    {
+        // Datos de ejemplo para categorías
+        productCategories = new List<CategoryModel>
+        {
+            new() { Id = "1", Name = "Electronics" },
+            new() { Id = "2", Name = "Services" },
+            new() { Id = "3", Name = "Software" },
+            new() { Id = "4", Name = "Consulting" }
+        };
+
+        // Datos de ejemplo para tipos de impuesto
+        taxTypes = new List<TaxTypeModel>
+        {
+            new() { Id = "01", Name = "IVA 13%" },
+            new() { Id = "02", Name = "IVA 2%" },
+            new() { Id = "03", Name = "IVA 1%" },
+            new() { Id = "08", Name = "Exempt" }
+        };
+
+        // Datos de ejemplo para productos top
+        topProducts = Enumerable.Range(1, 10)
+            .Select(i => new TopProductModel
+                {
+                    Name = $"Product {i}",
+                    Revenue = Random.Shared.Next(100000, 1000000)
+                })
+            .OrderByDescending(p => p.Revenue)
+            .ToList();
+
+        // Datos de ejemplo para distribución por categoría
+        categoryDistribution = productCategories.Select(c => new CategoryDistribution
+            {
+                Category = c.Name,
+                Revenue = Random.Shared.Next(500000, 2000000)
+            }).ToList();
+
+        // Datos detallados de productos
+        productDetails = Enumerable.Range(1, 50).Select(i => new ProductDetail
+            {
+                Code = $"PROD-{i.ToString().PadLeft(4, '0')}",
+                Name = $"Product {i}",
+                Category = productCategories[Random.Shared.Next(productCategories.Count)].Name,
+                UnitPrice = Random.Shared.Next(1000, 100000),
+                UnitsSold = Random.Shared.Next(10, 1000),
+                TaxType = taxTypes[Random.Shared.Next(taxTypes.Count)].Name,
+                Status = Random.Shared.Next(0, 100) < 80 ? "Active" : "Inactive"
+            }).ToList();
+
+        // Calcular métricas adicionales
+        foreach (var product in productDetails)
+        {
+            product.Revenue = product.UnitPrice * product.UnitsSold;
+            product.Margin = Random.Shared.NextDouble() * 0.5; // Margen entre 0% y 50%
+        }
+    }
+
+    private async Task GenerateReport()
+    {
+        ToastService.ShowInfo("Generating product report...");
+        await Task.Delay(1000);
+        ToastService.ShowSuccess("Product report generated successfully");
+    }
+
+    private async Task ExportReport()
+    {
+        ToastService.ShowInfo("Exporting product report...");
+        await Task.Delay(1000);
+        ToastService.ShowSuccess("Product report exported successfully");
+    }
+
+    private BadgeStyle GetProductStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Active" => BadgeStyle.Success,
+            "Inactive" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    private class CategoryModel
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    private class TaxTypeModel
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    private class TopProductModel
+    {
+        public string Name { get; set; }
+        public decimal Revenue { get; set; }
+    }
+
+    private class CategoryDistribution
+    {
+        public string Category { get; set; }
+        public decimal Revenue { get; set; }
+    }
+
+    private class ProductDetail
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public string Category { get; set; }
+        public decimal UnitPrice { get; set; }
+        public int UnitsSold { get; set; }
+        public decimal Revenue { get; set; }
+        public double Margin { get; set; }
+        public string TaxType { get; set; }
+        public string Status { get; set; }
+    }
+}

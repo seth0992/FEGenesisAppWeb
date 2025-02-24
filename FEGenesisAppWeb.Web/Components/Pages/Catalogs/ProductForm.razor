@@ -1,0 +1,329 @@
+﻿@page "/catalogs/products/new"
+@page "/catalogs/products/edit/{Id:int}"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>@(Id == null ? "New Product" : "Edit Product") - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    @* Header section with back button and title *@
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenButton Icon="arrow_back" Click="@(() => NavigationManager.NavigateTo("/catalogs/products"))" />
+                <RadzenText TextStyle="TextStyle.H3">@(Id == null ? "New Product" : "Edit Product")</RadzenText>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenTemplateForm TItem="ProductFormModel" Data=@model Submit=@OnSubmit>
+                <RadzenCard>
+                    @* Basic Information Section *@
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Basic Information</RadzenText>
+                        </RadzenColumn>
+
+                        @* Product Type Selection *@
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Product Type" />
+                                <RadzenSelectBar @bind-Value=@model.IsService TValue="bool">
+                                    <Items>
+                                        <RadzenSelectBarItem Text="Product" Value="false" />
+                                        <RadzenSelectBarItem Text="Service" Value="true" />
+                                    </Items>
+                                </RadzenSelectBar>
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @* Product Code *@
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Product Code" />
+                                <RadzenTextBox @bind-Value=@model.Code Class="w-100" />
+                                <RadzenRequiredValidator Component="Code" Text="Code is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @* CAByS Code *@
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="CAByS Code" />
+                                <RadzenTextBox @bind-Value=@model.CabysCode Class="w-100" />
+                                <RadzenRequiredValidator Component="CabysCode" Text="CAByS code is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @* Category *@
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Category" />
+                                <RadzenDropDown @bind-Value=@model.CategoryId
+                                                Data=@categories
+                                                TextProperty="Name"
+                                                ValueProperty="Id"
+                                                Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @* Product Name *@
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Name" />
+                                <RadzenTextBox @bind-Value=@model.Name Class="w-100" />
+                                <RadzenRequiredValidator Component="Name" Text="Name is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @* Unit of Measure *@
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Unit of Measure" />
+                                <RadzenDropDown @bind-Value=@model.UnitOfMeasure
+                                                Data=@unitsOfMeasure
+                                                TextProperty="Name"
+                                                ValueProperty="Code"
+                                                Class="w-100" />
+                                <RadzenRequiredValidator Component="UnitOfMeasure" Text="Unit of measure is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @* Description *@
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Description" />
+                                <RadzenTextArea @bind-Value=@model.Description Rows="3" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @* Price and Tax Section *@
+                    <RadzenRow Class="mt-4">
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Price and Tax</RadzenText>
+                        </RadzenColumn>
+
+                        @* Unit Price *@
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Unit Price" />
+                                <RadzenNumeric @bind-Value=@model.UnitPrice TValue="decimal"
+                                               Format="c2" Class="w-100" />
+                                <RadzenRequiredValidator Component="UnitPrice"
+                                                         Text="Unit price is required and must be greater than 0" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @* Tax Type *@
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Tax Type" />
+                                <RadzenDropDown @bind-Value=@model.TaxTypeId
+                                                Data=@taxTypes
+                                                TextProperty="Name"
+                                                ValueProperty="Id"
+                                                Change=@OnTaxTypeChange
+                                                Class="w-100" />
+                                <RadzenRequiredValidator Component="TaxTypeId" Text="Tax type is required" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        @* Tax Rate (Read-only) *@
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Tax Rate (%)" />
+                                <RadzenNumeric @bind-Value=@model.TaxRate TValue="decimal"
+                                               Format="n2" Disabled="true" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @* Buttons Section *@
+                    <RadzenRow Class="mt-4">
+                        <RadzenColumn Size="12">
+                            <RadzenStack Orientation="Orientation.Horizontal"
+                                         JustifyContent="JustifyContent.End" Gap="1rem">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel"
+                                              Click="@(() => NavigationManager.NavigateTo("/catalogs/products"))" />
+                                <RadzenButton ButtonType="ButtonType.Submit"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Text="Save"
+                                              IsBusy=@isSaving
+                                              BusyText="Saving..." />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenCard>
+            </RadzenTemplateForm>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private ProductFormModel model = new();
+    private bool isSaving;
+    private List<CategoryData> categories = new();
+    private List<UnitOfMeasure> unitsOfMeasure = new();
+    private List<TaxTypeData> taxTypes = new();
+
+    protected override void OnInitialized()
+    {
+        LoadCatalogs();
+
+        if (Id.HasValue)
+        {
+            LoadProduct();
+        }
+        else
+        {
+            // Initialize defaults for new product
+            model = new ProductFormModel
+                {
+                    IsActive = true,
+                    IsService = false,
+                    UnitPrice = 0,
+                    TaxRate = 13 // Default Costa Rica IVA
+                };
+        }
+    }
+
+    private void LoadCatalogs()
+    {
+        // Mock categories
+        categories = new List<CategoryData>
+        {
+            new() { Id = "1", Name = "Electronics" },
+            new() { Id = "2", Name = "Services" },
+            new() { Id = "3", Name = "Office Supplies" },
+            new() { Id = "4", Name = "Software" },
+            new() { Id = "5", Name = "Hardware" }
+        };
+
+        // Mock units of measure
+        unitsOfMeasure = new List<UnitOfMeasure>
+        {
+            new() { Code = "UN", Name = "Unit" },
+            new() { Code = "HR", Name = "Hour" },
+            new() { Code = "KG", Name = "Kilogram" },
+            new() { Code = "MT", Name = "Meter" },
+            new() { Code = "LT", Name = "Liter" },
+            new() { Code = "SV", Name = "Service" }
+        };
+
+        // Mock tax types based on Costa Rica's tax system
+        taxTypes = new List<TaxTypeData>
+        {
+            new() { Id = "01", Name = "IVA 13%", Rate = 13 },
+            new() { Id = "02", Name = "IVA 2%", Rate = 2 },
+            new() { Id = "03", Name = "IVA 1%", Rate = 1 },
+            new() { Id = "04", Name = "IVA 4%", Rate = 4 },
+            new() { Id = "05", Name = "Exempt", Rate = 0 }
+        };
+    }
+
+    private void LoadProduct()
+    {
+        if (Id == 1) // Mock data for editing
+        {
+            model = new ProductFormModel
+                {
+                    Id = 1,
+                    Code = "P001",
+                    CabysCode = "1234567890",
+                    Name = "Laptop Dell Latitude",
+                    Description = "Business laptop computer",
+                    CategoryId = "1",
+                    UnitOfMeasure = "UN",
+                    UnitPrice = 750000,
+                    TaxTypeId = "01",
+                    TaxRate = 13,
+                    IsService = false,
+                    IsActive = true
+                };
+        }
+    }
+
+    private void OnTaxTypeChange(object value)
+    {
+        if (value != null)
+        {
+            var taxType = taxTypes.FirstOrDefault(t => t.Id == value.ToString());
+            if (taxType != null)
+            {
+                model.TaxRate = taxType.Rate;
+            }
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        try
+        {
+            isSaving = true;
+
+            // Validate unit price
+            if (model.UnitPrice <= 0)
+            {
+                ToastService.ShowError("Unit price must be greater than 0");
+                return;
+            }
+
+            // Here we will implement the API call to save the product
+            await Task.Delay(1000); // Simulate API call
+
+            ToastService.ShowSuccess(
+                Id.HasValue ? "Product updated successfully" : "Product created successfully"
+            );
+            NavigationManager.NavigateTo("/catalogs/products");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error saving product: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class ProductFormModel
+    {
+        public int Id { get; set; }
+        public string Code { get; set; }
+        public string CabysCode { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string CategoryId { get; set; }
+        public string UnitOfMeasure { get; set; }
+        public decimal UnitPrice { get; set; }
+        public string TaxTypeId { get; set; }
+        public decimal TaxRate { get; set; }
+        public bool IsService { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private class CategoryData
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    private class UnitOfMeasure
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
+    }
+
+    private class TaxTypeData
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public decimal Rate { get; set; }
+    }
+}

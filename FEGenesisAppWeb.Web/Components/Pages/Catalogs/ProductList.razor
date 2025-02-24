@@ -1,0 +1,335 @@
+﻿@page "/productos/listado"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Products Catalog - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    @* Header section with title and new product button *@
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenText TextStyle="TextStyle.H3">Products Catalog</RadzenText>
+                <RadzenButton Icon="add" Text="New Product" ButtonStyle="ButtonStyle.Primary"
+                              Click="@(() => NavigationManager.NavigateTo("/catalogs/products/new"))" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                @* Search and filter section *@
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Class="mb-4">
+                    <RadzenTextBox Placeholder="Search by code or name..." Style="width: 300px;"
+                                   @bind-Value=@searchText Change=@(args => OnSearch(args)) />
+
+                    <RadzenDropDown Data=@categories @bind-Value=@selectedCategory
+                                    TextProperty="Name" ValueProperty="Id"
+                                    AllowClear="true" Placeholder="Category"
+                                    Class="w-100" Style="max-width: 200px;" />
+
+                    <RadzenDropDown Data=@taxTypes @bind-Value=@selectedTaxType
+                                    TextProperty="Name" ValueProperty="Id"
+                                    AllowClear="true" Placeholder="Tax Type"
+                                    Class="w-100" Style="max-width: 200px;" />
+
+                    <RadzenButton Icon="search" Text="Search" ButtonStyle="ButtonStyle.Secondary" Click=@Search />
+                    <RadzenButton Icon="refresh" Text="Clear" ButtonStyle="ButtonStyle.Light" Click=@ClearFilters />
+                </RadzenStack>
+
+                @* Products data grid *@
+                <RadzenDataGrid @ref="productsGrid" Data="@products" TItem="ProductData"
+                                AllowPaging="true" AllowSorting="true" PageSize="10"
+                                PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true">
+                    <Columns>
+                        @* Code column *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="Code" Title="Code" Width="120px">
+                            <Template Context="data">
+                                <RadzenText TextStyle="TextStyle.Body2" class="rz-color-primary">@data.Code</RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        @* CAByS column *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="CabysCode" Title="CAByS" Width="120px">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="BadgeStyle.Light" Text="@data.CabysCode" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        @* Name column *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="Name" Title="Name" />
+
+                        @* Price column *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="UnitPrice" Title="Price" Width="150px">
+                            <Template Context="data">
+                                <RadzenText TextStyle="TextStyle.Body2" class="rz-color-secondary-light">
+                                    @data.UnitPrice.ToString("₡#,##0.00")
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        @* Tax column *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="TaxType" Title="Tax" Width="150px">
+                            <Template Context="data">
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                    <RadzenIcon Icon="percent" />
+                                    <RadzenText TextStyle="TextStyle.Body2">
+                                        @($"{data.TaxType} ({data.TaxRate}%)")
+                                    </RadzenText>
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        @* Type column *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="IsService" Title="Type" Width="100px">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@(data.IsService ? BadgeStyle.Info : BadgeStyle.Secondary)"
+                                             Text="@(data.IsService ? "Service" : "Product")" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        @* Status column *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="IsActive" Title="Status" Width="100px">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@(data.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)"
+                                             Text="@(data.IsActive ? "Active" : "Inactive")" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        @* Actions column *@
+                        <RadzenDataGridColumn TItem="ProductData" Title="Actions" TextAlign="TextAlign.Center" Width="170px">
+                            <Template Context="data">
+                                <RadzenButton Icon="edit"
+                                              ButtonStyle="ButtonStyle.Light"
+                                              Size="ButtonSize.Medium"
+                                              Click="@(() => EditProduct(data.Id))"
+                                              Class="mx-1"
+                                              ToolTip="Edit Product" />
+
+                                <RadzenButton Icon="@(data.IsActive ? "cancel" : "check_circle_outline")"
+                                              ButtonStyle="@(data.IsActive ? ButtonStyle.Danger : ButtonStyle.Success)"
+                                              Size="ButtonSize.Medium"
+                                              Click="@(async () => await ToggleProductStatus(data))"
+                                              Class="mx-1"
+                                              ToolTip="@(data.IsActive ? "Deactivate" : "Activate")" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    // Component fields
+    private RadzenDataGrid<ProductData> productsGrid;
+    private string searchText = "";
+    private string selectedCategory;
+    private string selectedTaxType;
+    private IEnumerable<ProductData> products;
+    private List<CategoryData> categories = new();
+    private List<TaxTypeData> taxTypes = new();
+
+    // Initialize component
+    protected override void OnInitialized()
+    {
+        LoadMockData();
+    }
+
+    // Load mock data for testing
+    private void LoadMockData()
+    {
+        // Mock categories
+        categories = new List<CategoryData>
+        {
+            new() { Id = "1", Name = "Electronics" },
+            new() { Id = "2", Name = "Services" },
+            new() { Id = "3", Name = "Office Supplies" },
+            new() { Id = "4", Name = "Software" },
+            new() { Id = "5", Name = "Hardware" }
+        };
+
+        // Mock tax types based on Costa Rica's tax system
+        taxTypes = new List<TaxTypeData>
+        {
+            new() { Id = "01", Name = "IVA 13%" },
+            new() { Id = "02", Name = "IVA 2%" },
+            new() { Id = "03", Name = "IVA 1%" },
+            new() { Id = "04", Name = "IVA 4%" },
+            new() { Id = "05", Name = "Exempt" }
+        };
+
+        // Mock products with realistic Costa Rican business examples
+        products = new List<ProductData>
+        {
+            new() {
+                Id = 1,
+                Code = "P001",
+                CabysCode = "1234567890",
+                Name = "Laptop Dell Latitude",
+                UnitPrice = 750000,
+                TaxType = "IVA",
+                TaxRate = 13,
+                IsService = false,
+                IsActive = true
+            },
+            new() {
+                Id = 2,
+                Code = "S001",
+                CabysCode = "9876543210",
+                Name = "Technical Support (Hour)",
+                UnitPrice = 25000,
+                TaxType = "IVA",
+                TaxRate = 13,
+                IsService = true,
+                IsActive = true
+            },
+            new() {
+                Id = 3,
+                Code = "P002",
+                CabysCode = "5678901234",
+                Name = "Office Chair Ergonomic",
+                UnitPrice = 85000,
+                TaxType = "IVA",
+                TaxRate = 13,
+                IsService = false,
+                IsActive = false
+            },
+            new() {
+                Id = 4,
+                Code = "S002",
+                CabysCode = "4567890123",
+                Name = "Software Development (Hour)",
+                UnitPrice = 35000,
+                TaxType = "IVA",
+                TaxRate = 13,
+                IsService = true,
+                IsActive = true
+            },
+            new() {
+                Id = 5,
+                Code = "P003",
+                CabysCode = "3456789012",
+                Name = "Printer HP LaserJet",
+                UnitPrice = 225000,
+                TaxType = "IVA",
+                TaxRate = 13,
+                IsService = false,
+                IsActive = true
+            }
+        };
+    }
+
+    // Search handler
+    private void OnSearch(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            LoadMockData();
+            return;
+        }
+
+        // Filter products based on search text
+        products = products.Where(p =>
+            p.Code.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            p.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            p.CabysCode.Contains(value, StringComparison.OrdinalIgnoreCase)
+        );
+    }
+
+    // Combined search with all filters
+    private void Search()
+    {
+        var filteredProducts = products.AsEnumerable();
+
+        // Apply text search
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.Code.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                p.CabysCode.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            );
+        }
+
+        // Apply category filter
+        if (!string.IsNullOrEmpty(selectedCategory))
+        {
+            // This will be implemented when we have category data
+            // filteredProducts = filteredProducts.Where(p => p.CategoryId == selectedCategory);
+        }
+
+        // Apply tax type filter
+        if (!string.IsNullOrEmpty(selectedTaxType))
+        {
+            // This will be implemented when we have proper tax type data
+            // filteredProducts = filteredProducts.Where(p => p.TaxTypeId == selectedTaxType);
+        }
+
+        products = filteredProducts;
+    }
+
+    // Clear all filters
+    private void ClearFilters()
+    {
+        searchText = "";
+        selectedCategory = null;
+        selectedTaxType = null;
+        LoadMockData();
+    }
+
+    // Navigate to edit product
+    private void EditProduct(int id)
+    {
+        NavigationManager.NavigateTo($"/catalogs/products/edit/{id}");
+    }
+
+    // Toggle product active status
+    private async Task ToggleProductStatus(ProductData product)
+    {
+        try
+        {
+            // This will be replaced with an API call when implemented
+            product.IsActive = !product.IsActive;
+            await InvokeAsync(StateHasChanged);
+
+            ToastService.ShowSuccess(
+                $"Product status updated to: {(product.IsActive ? "Active" : "Inactive")}"
+            );
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError(
+                "Error updating product status: " + ex.Message             
+            );
+        }
+    }
+
+    // Data models
+    private class ProductData
+    {
+        public int Id { get; set; }
+        public string Code { get; set; }
+        public string CabysCode { get; set; }
+        public string Name { get; set; }
+        public decimal UnitPrice { get; set; }
+        public string TaxType { get; set; }
+        public decimal TaxRate { get; set; }
+        public bool IsService { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private class CategoryData
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    private class TaxTypeData
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+    }
+}

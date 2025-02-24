@@ -1,0 +1,297 @@
+﻿@page "/reports/clients"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Client Report - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3">Client Analysis Report</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Filters -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                    <RadzenDatePicker @bind-Value=@startDate
+                                      Placeholder="Start Date"
+                                      DateFormat="dd/MM/yyyy"
+                                      Class="w-100"
+                                      Style="max-width: 200px;" />
+
+                    <RadzenDatePicker @bind-Value=@endDate
+                                      Placeholder="End Date"
+                                      DateFormat="dd/MM/yyyy"
+                                      Class="w-100"
+                                      Style="max-width: 200px;" />
+
+                    <RadzenDropDown Data=@clientTypes
+                                    @bind-Value=@selectedClientType
+                                    TextProperty="Description"
+                                    ValueProperty="Id"
+                                    AllowClear="true"
+                                    Placeholder="Client Type"
+                                    Class="w-100"
+                                    Style="max-width: 200px;" />
+
+                    <RadzenButton Text="Generate Report"
+                                  Icon="search"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Click=@GenerateReport />
+
+                    <RadzenButton Text="Export"
+                                  Icon="file_download"
+                                  ButtonStyle="ButtonStyle.Secondary"
+                                  Click=@ExportReport />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Summary Cards -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Total Clients</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">156</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">+12 new this period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Active Clients</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">85%</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">+5% vs previous period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Average Purchase</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">₡125,000</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">+8% vs previous period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Recurring Clients</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">65%</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_down" Style="color: var(--rz-danger);" />
+                        <RadzenText TextStyle="TextStyle.Body2">-2% vs previous period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Charts -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Client Distribution by Type</RadzenText>
+                <RadzenChart>
+                    <RadzenPieSeries Data="@clientDistribution"
+                                     CategoryProperty="Type"
+                                     ValueProperty="Count"
+                                     Title="Client Types" />
+                    <RadzenLegend Position="LegendPosition.Bottom" />
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Top 10 Clients by Revenue</RadzenText>
+                <RadzenChart>
+                    <RadzenBarSeries Data="@topClients"
+                                     CategoryProperty="Name"
+                                     ValueProperty="Revenue"
+                                     Title="Revenue" />
+                    <RadzenValueAxis>
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="Revenue (₡)" />
+                    </RadzenValueAxis>
+                    <RadzenCategoryAxis>
+                        <RadzenAxisTitle Text="Client" />
+                    </RadzenCategoryAxis>
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Detailed Client Information -->
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Client Details</RadzenText>
+                <RadzenDataGrid Data="@clientDetails"
+                                TItem="ClientDetail"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ClientDetail" Property="Name" Title="Name" />
+                        <RadzenDataGridColumn TItem="ClientDetail" Property="Type" Title="Type" />
+                        <RadzenDataGridColumn TItem="ClientDetail" Property="Identification" Title="Identification" />
+                        <RadzenDataGridColumn TItem="ClientDetail" Property="LastPurchase" Title="Last Purchase">
+                            <Template Context="data">
+                                @data.LastPurchase.ToShortDateString()
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ClientDetail" Property="PurchaseCount" Title="Purchases" />
+                        <RadzenDataGridColumn TItem="ClientDetail" Property="TotalRevenue" Title="Total Revenue">
+                            <Template Context="data">
+                                @data.TotalRevenue.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ClientDetail" Property="AverageTicket" Title="Avg. Ticket">
+                            <Template Context="data">
+                                @data.AverageTicket.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ClientDetail" Property="Status" Title="Status">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@GetClientStatusBadgeStyle(data.Status)"
+                                             Text="@data.Status" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    private DateTime? startDate = DateTime.Now.AddDays(-30);
+    private DateTime? endDate = DateTime.Now;
+    private string? selectedClientType;
+    private List<ClientTypeModel> clientTypes = new();
+    private List<ClientDistribution> clientDistribution = new();
+    private List<TopClient> topClients = new();
+    private List<ClientDetail> clientDetails = new();
+
+    protected override void OnInitialized()
+    {
+        LoadMockData();
+    }
+
+    private void LoadMockData()
+    {
+        // Mock client types
+        clientTypes = new List<ClientTypeModel>
+        {
+            new() { Id = "01", Description = "Individual" },
+            new() { Id = "02", Description = "Corporation" },
+            new() { Id = "03", Description = "Government" }
+        };
+
+        // Mock client distribution data
+        clientDistribution = new List<ClientDistribution>
+        {
+            new() { Type = "Individual", Count = 85 },
+            new() { Type = "Corporation", Count = 45 },
+            new() { Type = "Government", Count = 26 }
+        };
+
+        // Mock top clients data
+        topClients = Enumerable.Range(1, 10).Select(i => new TopClient
+            {
+                Name = $"Client {i}",
+                Revenue = Random.Shared.Next(500000, 2000000)
+            }).OrderByDescending(c => c.Revenue).ToList();
+
+        // Mock client details
+        clientDetails = Enumerable.Range(1, 50).Select(i => new ClientDetail
+            {
+                Name = $"Client {i}",
+                Type = clientTypes[Random.Shared.Next(0, clientTypes.Count)].Description,
+                Identification = Random.Shared.Next(0, 2) == 0
+                    ? $"3-101-{Random.Shared.Next(100000, 999999)}"
+                    : $"1-{Random.Shared.Next(1000, 9999)}-{Random.Shared.Next(1000, 9999)}",
+                LastPurchase = DateTime.Now.AddDays(-Random.Shared.Next(0, 60)),
+                PurchaseCount = Random.Shared.Next(1, 50),
+                TotalRevenue = Random.Shared.Next(100000, 2000000),
+                Status = Random.Shared.Next(0, 100) < 80 ? "Active" : "Inactive"
+            }).OrderByDescending(c => c.TotalRevenue).ToList();
+
+        // Calculate average ticket
+        clientDetails.ForEach(c => c.AverageTicket = c.TotalRevenue / c.PurchaseCount);
+    }
+
+    private async Task GenerateReport()
+    {
+        ToastService.ShowInfo("Generating client report...");
+        await Task.Delay(1000);
+        ToastService.ShowSuccess("Client report generated successfully");
+    }
+
+    private async Task ExportReport()
+    {
+        ToastService.ShowInfo("Exporting client report...");
+        await Task.Delay(1000);
+        ToastService.ShowSuccess("Client report exported successfully");
+    }
+
+    private BadgeStyle GetClientStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Active" => BadgeStyle.Success,
+            "Inactive" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    private class ClientTypeModel
+    {
+        public string Id { get; set; }
+        public string Description { get; set; }
+    }
+
+    private class ClientDistribution
+    {
+        public string Type { get; set; }
+        public int Count { get; set; }
+    }
+
+    private class TopClient
+    {
+        public string Name { get; set; }
+        public decimal Revenue { get; set; }
+    }
+
+    private class ClientDetail
+    {
+        public string Name { get; set; }
+        public string Type { get; set; }
+        public string Identification { get; set; }
+        public DateTime LastPurchase { get; set; }
+        public int PurchaseCount { get; set; }
+        public decimal TotalRevenue { get; set; }
+        public decimal AverageTicket { get; set; }
+        public string Status { get; set; }
+    }
+}

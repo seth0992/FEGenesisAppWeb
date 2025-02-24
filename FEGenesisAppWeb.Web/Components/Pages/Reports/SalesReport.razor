@@ -1,0 +1,302 @@
+﻿@page "/reports/sales"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Sales Report - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3">Sales Report</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Filters -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                    <RadzenDatePicker @bind-Value=@startDate
+                                      Placeholder="Start Date"
+                                      DateFormat="dd/MM/yyyy"
+                                      Class="w-100"
+                                      Style="max-width: 200px;" />
+
+                    <RadzenDatePicker @bind-Value=@endDate
+                                      Placeholder="End Date"
+                                      DateFormat="dd/MM/yyyy"
+                                      Class="w-100"
+                                      Style="max-width: 200px;" />
+
+                    <RadzenDropDown Data=@documentTypes
+                                    @bind-Value=@selectedDocumentType
+                                    TextProperty="Name"
+                                    ValueProperty="Code"
+                                    AllowClear="true"
+                                    Placeholder="Document Type"
+                                    Class="w-100"
+                                    Style="max-width: 200px;" />
+
+                    <RadzenButton Text="Generate Report"
+                                  Icon="search"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Click=@GenerateReport />
+
+                    <RadzenButton Text="Export"
+                                  Icon="file_download"
+                                  ButtonStyle="ButtonStyle.Secondary"
+                                  Click=@ExportReport />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Summary Cards -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Total Sales</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">₡4,500,000</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">+15% vs previous period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Total Invoices</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">125</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">+8% vs previous period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Average Sale</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">₡36,000</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_down" Style="color: var(--rz-danger);" />
+                        <RadzenText TextStyle="TextStyle.Body2">-3% vs previous period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenCard>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H6">Taxes Collected</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">₡585,000</RadzenText>
+                    <div class="d-flex align-items-center">
+                        <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
+                        <RadzenText TextStyle="TextStyle.Body2">+12% vs previous period</RadzenText>
+                    </div>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Charts -->
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12" SizeMD="8">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Sales Trend</RadzenText>
+                <RadzenChart>
+                    <RadzenLineSeries Data="@salesData"
+                                      CategoryProperty="Date"
+                                      ValueProperty="Amount"
+                                      Title="Sales">
+                        <RadzenMarkers MarkerType="MarkerType.Circle" />
+                    </RadzenLineSeries>
+                    <RadzenCategoryAxis Padding="20" />
+                    <RadzenValueAxis>
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="Amount (₡)" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Sales by Document Type</RadzenText>
+                <RadzenChart>
+                    <RadzenPieSeries Data="@documentTypeData"
+                                     CategoryProperty="Type"
+                                     ValueProperty="Amount" />
+                    <RadzenLegend Position="LegendPosition.Bottom" />
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Detailed Data -->
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Sales Details</RadzenText>
+                <RadzenDataGrid Data="@salesDetails"
+                                TItem="SaleDetail"
+                                AllowPaging="true"
+                                PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SaleDetail" Property="Date" Title="Date">
+                            <Template Context="data">
+                                @data.Date.ToShortDateString()
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SaleDetail" Property="DocumentType" Title="Type" />
+                        <RadzenDataGridColumn TItem="SaleDetail" Property="Number" Title="Number" />
+                        <RadzenDataGridColumn TItem="SaleDetail" Property="Client" Title="Client" />
+                        <RadzenDataGridColumn TItem="SaleDetail" Property="Subtotal" Title="Subtotal">
+                            <Template Context="data">
+                                @data.Subtotal.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SaleDetail" Property="Tax" Title="Tax">
+                            <Template Context="data">
+                                @data.Tax.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SaleDetail" Property="Total" Title="Total">
+                            <Template Context="data">
+                                @data.Total.ToString("C2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SaleDetail" Property="Status" Title="Status">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(data.Status)"
+                                             Text="@data.Status" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    private DateTime? startDate = DateTime.Now.AddDays(-30);
+    private DateTime? endDate = DateTime.Now;
+    private string? selectedDocumentType;
+    private List<DocumentType> documentTypes = new();
+    private List<SaleData> salesData = new();
+    private List<DocumentTypeData> documentTypeData = new();
+    private List<SaleDetail> salesDetails = new();
+
+    protected override void OnInitialized()
+    {
+        LoadMockData();
+    }
+
+    private void LoadMockData()
+    {
+        // Mock document types
+        documentTypes = new List<DocumentType>
+        {
+            new() { Code = "01", Name = "Electronic Invoice" },
+            new() { Code = "02", Name = "Debit Note" },
+            new() { Code = "03", Name = "Credit Note" },
+            new() { Code = "04", Name = "Electronic Ticket" }
+        };
+
+        // Mock sales trend data
+        salesData = Enumerable.Range(0, 30).Select(i => new SaleData
+            {
+                Date = DateTime.Now.AddDays(-i).ToString("MM/dd"),
+                Amount = Random.Shared.Next(100000, 500000)
+            }).Reverse().ToList();
+
+        // Mock document type distribution
+        documentTypeData = new List<DocumentTypeData>
+        {
+            new() { Type = "Electronic Invoice", Amount = 3500000 },
+            new() { Type = "Debit Note", Amount = 500000 },
+            new() { Type = "Credit Note", Amount = -250000 },
+            new() { Type = "Electronic Ticket", Amount = 750000 }
+        };
+
+        // Mock sales details
+        salesDetails = Enumerable.Range(1, 50).Select(i => new SaleDetail
+            {
+                Date = DateTime.Now.AddDays(-Random.Shared.Next(0, 30)),
+                DocumentType = documentTypes[Random.Shared.Next(0, documentTypes.Count)].Name,
+                Number = $"FE-{i.ToString().PadLeft(6, '0')}",
+                Client = $"Client {Random.Shared.Next(1, 10)}",
+                Subtotal = Random.Shared.Next(50000, 200000),
+                Tax = Random.Shared.Next(5000, 20000),
+                Status = Random.Shared.Next(0, 100) < 80 ? "Approved" : Random.Shared.Next(0, 100) < 50 ? "Pending" : "Rejected"
+            }).OrderByDescending(s => s.Date).ToList();
+
+        // Calculate totals
+        salesDetails.ForEach(s => s.Total = s.Subtotal + s.Tax);
+    }
+
+    private async Task GenerateReport()
+    {
+        // Here we would make the API call to generate the report
+        ToastService.ShowInfo("Generating report...");
+        await Task.Delay(1000);
+        ToastService.ShowSuccess("Report generated successfully");
+    }
+
+    private async Task ExportReport()
+    {
+        // Here we would handle the export functionality
+        ToastService.ShowInfo("Exporting report...");
+        await Task.Delay(1000);
+        ToastService.ShowSuccess("Report exported successfully");
+    }
+
+    private BadgeStyle GetStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Approved" => BadgeStyle.Success,
+            "Pending" => BadgeStyle.Warning,
+            "Rejected" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    private class DocumentType
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
+    }
+
+    private class SaleData
+    {
+        public string Date { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    private class DocumentTypeData
+    {
+        public string Type { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    private class SaleDetail
+    {
+        public DateTime Date { get; set; }
+        public string DocumentType { get; set; }
+        public string Number { get; set; }
+        public string Client { get; set; }
+        public decimal Subtotal { get; set; }
+        public decimal Tax { get; set; }
+        public decimal Total { get; set; }
+        public string Status { get; set; }
+    }
+}
