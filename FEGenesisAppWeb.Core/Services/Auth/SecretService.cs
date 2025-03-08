@@ -20,9 +20,7 @@ namespace FEGenesisAppWeb.Core.Services.Auth
         Task<List<SecretModel>> GetAllSecretsAsync(long tenantId);
     }
 
-    // GenesisFEPortalWebApp.BL/Services/SecretService.cs
-
-    public class SecretService : ISecretService
+       public class SecretService : ISecretService
     {
         private readonly ISecretRepository _secretRepository;
         private readonly ILogger<SecretService> _logger;

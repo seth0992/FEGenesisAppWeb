@@ -7,7 +7,7 @@
 <div class="container-fluid">
     <RadzenRow class="mb-4">
         <RadzenColumn Size="12">
-            <RadzenText TextStyle="TextStyle.H3">Company Settings</RadzenText>
+            <RadzenText TextStyle="TextStyle.H3">Información de la Empresa</RadzenText>
         </RadzenColumn>
     </RadzenRow>
 
@@ -18,12 +18,12 @@
                     <!-- General Information -->
                     <RadzenRow>
                         <RadzenColumn Size="12">
-                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">General Information</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Información General</RadzenText>
                         </RadzenColumn>
 
                         <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Company Name" />
+                                <RadzenLabel Text="Nombre de la Empresa" />
                                 <RadzenTextBox @bind-Value=@model.CompanyName Class="w-100" />
                                 <RadzenRequiredValidator Component="CompanyName" Text="Company name is required" />
                             </RadzenStack>
@@ -31,14 +31,14 @@
 
                         <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Trade Name" />
+                                <RadzenLabel Text="Nombre Comercial" />
                                 <RadzenTextBox @bind-Value=@model.CommercialName Class="w-100" />
                             </RadzenStack>
                         </RadzenColumn>
 
                         <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Tax ID" />
+                                <RadzenLabel Text="Impuestos" />
                                 <RadzenTextBox @bind-Value=@model.TaxId Class="w-100" />
                                 <RadzenRequiredValidator Component="TaxId" Text="Tax ID is required" />
                             </RadzenStack>
@@ -60,7 +60,7 @@
 
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Province" />
+                                <RadzenLabel Text="Provincia" />
                                 <RadzenDropDown @bind-Value=@model.ProvinceId Data=@provinces
                                                 TextProperty="ProvinceName" ValueProperty="ProvinceID" Class="w-100"
                                                 Change=@LoadCantons />
@@ -78,7 +78,7 @@
 
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="District" />
+                                <RadzenLabel Text="Distrito" />
                                 <RadzenDropDown @bind-Value=@model.DistrictId Data=@districts
                                                 TextProperty="DistrictName" ValueProperty="DistrictID" Class="w-100"
                                                 Disabled=@(model.CantonId == 0) />
@@ -87,7 +87,7 @@
 
                         <RadzenColumn Size="12" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Full Address" />
+                                <RadzenLabel Text="Dirección" />
                                 <RadzenTextArea @bind-Value=@model.Address Rows="3" Class="w-100" />
                             </RadzenStack>
                         </RadzenColumn>
@@ -99,7 +99,7 @@
 
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Default Currency" />
+                                <RadzenLabel Text="Moneda por defecto" />
                                 <RadzenDropDown @bind-Value=@model.DefaultCurrency Data=@currencies
                                                 TextProperty="Description" ValueProperty="Code" Class="w-100" />
                             </RadzenStack>
@@ -107,21 +107,21 @@
 
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Default Payment Term (days)" />
+                                <RadzenLabel Text="Plazo de pago" />
                                 <RadzenNumeric @bind-Value=@model.DefaultPaymentTerm Min="0" Class="w-100" />
                             </RadzenStack>
                         </RadzenColumn>
 
-                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                    @*     <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
                                 <RadzenLabel Text="Invoice Prefix" />
                                 <RadzenTextBox @bind-Value=@model.InvoicePrefix MaxLength="10" Class="w-100" />
                             </RadzenStack>
-                        </RadzenColumn>
+                        </RadzenColumn> *@
 
                         <!-- Company Logo -->
                         <RadzenColumn Size="12">
-                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4 mt-4">Company Logo</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4 mt-4">Logo de la Empresa</RadzenText>
                         </RadzenColumn>
 
                         <RadzenColumn Size="12" Class="mb-4">
@@ -138,10 +138,10 @@
                         <!-- Action Buttons -->
                         <RadzenColumn Size="12" Class="mt-4">
                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
-                                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel"
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar"
                                               Click="@(() => NavigationManager.NavigateTo("/"))" />
                                 <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary"
-                                              Text="Save" IsBusy=@isSaving BusyText="Saving..." />
+                                              Text="Guardar" IsBusy=@isSaving BusyText="Saving..." />
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>

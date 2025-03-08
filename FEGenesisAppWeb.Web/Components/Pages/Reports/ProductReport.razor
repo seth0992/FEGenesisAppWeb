@@ -1,13 +1,13 @@
-﻿@page "/reports/products"
+﻿@page "/reportes/productos"
 @inject NavigationManager NavigationManager
 @inject IToastService ToastService
 
-<PageTitle>Product Analysis Report - GenesisFE</PageTitle>
+<PageTitle>Reporte de Análisis de Productos - GenesisFE</PageTitle>
 
 <div class="container-fluid">
     <RadzenRow class="mb-4">
         <RadzenColumn Size="12">
-            <RadzenText TextStyle="TextStyle.H3">Product Analysis Report</RadzenText>
+            <RadzenText TextStyle="TextStyle.H3">Reporte de Análisis de Productos</RadzenText>
         </RadzenColumn>
     </RadzenRow>
 
@@ -17,13 +17,13 @@
             <RadzenCard>
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
                     <RadzenDatePicker @bind-Value=@startDate
-                                      Placeholder="Start Date"
+                                      Placeholder="Fecha Inicio"
                                       DateFormat="dd/MM/yyyy"
                                       Class="w-100"
                                       Style="max-width: 200px;" />
 
                     <RadzenDatePicker @bind-Value=@endDate
-                                      Placeholder="End Date"
+                                      Placeholder="Fecha Fin"
                                       DateFormat="dd/MM/yyyy"
                                       Class="w-100"
                                       Style="max-width: 200px;" />
@@ -33,7 +33,7 @@
                                     TextProperty="Name"
                                     ValueProperty="Id"
                                     AllowClear="true"
-                                    Placeholder="Product Category"
+                                    Placeholder="Categoría de Producto"
                                     Class="w-100"
                                     Style="max-width: 200px;" />
 
@@ -42,16 +42,16 @@
                                     TextProperty="Name"
                                     ValueProperty="Id"
                                     AllowClear="true"
-                                    Placeholder="Tax Type"
+                                    Placeholder="Tipo de Impuesto"
                                     Class="w-100"
                                     Style="max-width: 200px;" />
 
-                    <RadzenButton Text="Generate Report"
+                    <RadzenButton Text="Generar Reporte"
                                   Icon="search"
                                   ButtonStyle="ButtonStyle.Primary"
                                   Click=@GenerateReport />
 
-                    <RadzenButton Text="Export"
+                    <RadzenButton Text="Exportar"
                                   Icon="file_download"
                                   ButtonStyle="ButtonStyle.Secondary"
                                   Click=@ExportReport />
@@ -65,11 +65,11 @@
         <RadzenColumn Size="12" SizeMD="3">
             <RadzenCard>
                 <RadzenStack>
-                    <RadzenText TextStyle="TextStyle.H6">Total Products</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H6">Total de Productos</RadzenText>
                     <RadzenText TextStyle="TextStyle.H4">248</RadzenText>
                     <div class="d-flex align-items-center">
                         <RadzenIcon Icon="add_circle" Style="color: var(--rz-success);" />
-                        <RadzenText TextStyle="TextStyle.Body2">15 new this period</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2">15 nuevos en este período</RadzenText>
                     </div>
                 </RadzenStack>
             </RadzenCard>
@@ -78,11 +78,11 @@
         <RadzenColumn Size="12" SizeMD="3">
             <RadzenCard>
                 <RadzenStack>
-                    <RadzenText TextStyle="TextStyle.H6">Best Selling</RadzenText>
-                    <RadzenText TextStyle="TextStyle.H4">Product A</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H6">Más Vendido</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">Producto A</RadzenText>
                     <div class="d-flex align-items-center">
                         <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
-                        <RadzenText TextStyle="TextStyle.Body2">425 units sold</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2">425 unidades vendidas</RadzenText>
                     </div>
                 </RadzenStack>
             </RadzenCard>
@@ -91,11 +91,11 @@
         <RadzenColumn Size="12" SizeMD="3">
             <RadzenCard>
                 <RadzenStack>
-                    <RadzenText TextStyle="TextStyle.H6">Highest Revenue</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H6">Mayor Ingreso</RadzenText>
                     <RadzenText TextStyle="TextStyle.H4">₡2,850,000</RadzenText>
                     <div class="d-flex align-items-center">
                         <RadzenIcon Icon="attach_money" Style="color: var(--rz-success);" />
-                        <RadzenText TextStyle="TextStyle.Body2">From Service B</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2">Del Servicio B</RadzenText>
                     </div>
                 </RadzenStack>
             </RadzenCard>
@@ -104,11 +104,11 @@
         <RadzenColumn Size="12" SizeMD="3">
             <RadzenCard>
                 <RadzenStack>
-                    <RadzenText TextStyle="TextStyle.H6">Average Margin</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H6">Margen Promedio</RadzenText>
                     <RadzenText TextStyle="TextStyle.H4">32%</RadzenText>
                     <div class="d-flex align-items-center">
                         <RadzenIcon Icon="trending_up" Style="color: var(--rz-success);" />
-                        <RadzenText TextStyle="TextStyle.Body2">+2% vs last period</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2">+2% vs período anterior</RadzenText>
                     </div>
                 </RadzenStack>
             </RadzenCard>
@@ -119,18 +119,18 @@
     <RadzenRow class="mb-4">
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenCard>
-                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Top 10 Products by Revenue</RadzenText>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Top 10 Productos por Ingresos</RadzenText>
                 <RadzenChart>
                     <RadzenBarSeries Data="@topProducts"
                                      CategoryProperty="Name"
                                      ValueProperty="Revenue"
-                                     Title="Revenue" />
+                                     Title="Ingresos" />
                     <RadzenValueAxis>
                         <RadzenGridLines Visible="true" />
-                        <RadzenAxisTitle Text="Revenue (₡)" />
+                        <RadzenAxisTitle Text="Ingresos (₡)" />
                     </RadzenValueAxis>
                     <RadzenCategoryAxis>
-                        <RadzenAxisTitle Text="Product" />
+                        <RadzenAxisTitle Text="Producto" />
                     </RadzenCategoryAxis>
                 </RadzenChart>
             </RadzenCard>
@@ -138,12 +138,12 @@
 
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenCard>
-                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Revenue Distribution by Category</RadzenText>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Distribución de Ingresos por Categoría</RadzenText>
                 <RadzenChart>
                     <RadzenPieSeries Data="@categoryDistribution"
                                      CategoryProperty="Category"
                                      ValueProperty="Revenue"
-                                     Title="Categories" />
+                                     Title="Categorías" />
                     <RadzenLegend Position="LegendPosition.Bottom" />
                 </RadzenChart>
             </RadzenCard>
@@ -154,37 +154,37 @@
     <RadzenRow>
         <RadzenColumn Size="12">
             <RadzenCard>
-                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Product Details</RadzenText>
+                <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Detalles de Productos</RadzenText>
                 <RadzenDataGrid Data="@productDetails"
                                 TItem="ProductDetail"
                                 AllowPaging="true"
                                 AllowSorting="true"
                                 PageSize="10">
                     <Columns>
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="Code" Title="Code" />
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="Name" Title="Name" />
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="Category" Title="Category" />
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="UnitPrice" Title="Unit Price">
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Code" Title="Código" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Name" Title="Nombre" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Category" Title="Categoría" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="UnitPrice" Title="Precio Unitario">
                             <Template Context="data">
                                 @data.UnitPrice.ToString("C2")
                             </Template>
                         </RadzenDataGridColumn>
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="UnitsSold" Title="Units Sold" />
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="Revenue" Title="Revenue">
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="UnitsSold" Title="Unidades Vendidas" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Revenue" Title="Ingresos">
                             <Template Context="data">
                                 @data.Revenue.ToString("C2")
                             </Template>
                         </RadzenDataGridColumn>
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="Margin" Title="Margin">
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Margin" Title="Margen">
                             <Template Context="data">
                                 @data.Margin.ToString("P1")
                             </Template>
                         </RadzenDataGridColumn>
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="TaxType" Title="Tax Type" />
-                        <RadzenDataGridColumn TItem="ProductDetail" Property="Status" Title="Status">
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="TaxType" Title="Tipo de Impuesto" />
+                        <RadzenDataGridColumn TItem="ProductDetail" Property="Status" Title="Estado">
                             <Template Context="data">
                                 <RadzenBadge BadgeStyle="@GetProductStatusBadgeStyle(data.Status)"
-                                             Text="@data.Status" />
+                                             Text="@GetStatusTranslation(data.Status)" />
                             </Template>
                         </RadzenDataGridColumn>
                     </Columns>
@@ -209,7 +209,39 @@
     {
         LoadMockData();
     }
+    private BadgeStyle GetProductStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Active" => BadgeStyle.Success,
+            "Inactive" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
 
+    private string GetStatusTranslation(string status)
+    {
+        return status switch
+        {
+            "Active" => "Activo",
+            "Inactive" => "Inactivo",
+            _ => status
+        };
+    }
+
+    private async Task GenerateReport()
+    {
+        ToastService.ShowInfo("Generando reporte de productos...");
+        await Task.Delay(1000);
+        ToastService.ShowSuccess("Reporte de productos generado exitosamente");
+    }
+
+    private async Task ExportReport()
+    {
+        ToastService.ShowInfo("Exportando reporte de productos...");
+        await Task.Delay(1000);
+        ToastService.ShowSuccess("Reporte de productos exportado exitosamente");
+    }
     private void LoadMockData()
     {
         // Datos de ejemplo para categorías
@@ -267,29 +299,7 @@
         }
     }
 
-    private async Task GenerateReport()
-    {
-        ToastService.ShowInfo("Generating product report...");
-        await Task.Delay(1000);
-        ToastService.ShowSuccess("Product report generated successfully");
-    }
-
-    private async Task ExportReport()
-    {
-        ToastService.ShowInfo("Exporting product report...");
-        await Task.Delay(1000);
-        ToastService.ShowSuccess("Product report exported successfully");
-    }
-
-    private BadgeStyle GetProductStatusBadgeStyle(string status)
-    {
-        return status switch
-        {
-            "Active" => BadgeStyle.Success,
-            "Inactive" => BadgeStyle.Danger,
-            _ => BadgeStyle.Light
-        };
-    }
+   
 
     private class CategoryModel
     {

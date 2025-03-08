@@ -1,0 +1,471 @@
+﻿@page "/configuracion/usuarios"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject DialogService DialogService
+
+<PageTitle>Gestión de Usuarios - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="1rem">
+                <RadzenText TextStyle="TextStyle.H3">Usuarios del Sistema</RadzenText>
+                <RadzenButton Icon="add" Text="Nuevo Usuario" ButtonStyle="ButtonStyle.Primary" 
+                            Click="@OpenCreateUserDialog" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <!-- Filtros -->
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Class="mb-4">
+                    <RadzenTextBox Placeholder="Buscar por nombre o correo..." Style="width: 300px;"
+                                 @bind-Value=@searchText Change=@(args => OnSearch(args)) />
+
+                    <RadzenDropDown Data=@roles @bind-Value=@selectedRole
+                                  TextProperty="Name" ValueProperty="Id"
+                                  AllowClear="true" Placeholder="Rol"
+                                  Class="w-100" Style="max-width: 200px;" />
+
+                    <RadzenButton Icon="search" Text="Buscar" ButtonStyle="ButtonStyle.Secondary" Click=@Search />
+                    <RadzenButton Icon="refresh" Text="Limpiar" ButtonStyle="ButtonStyle.Light" Click=@ClearFilters />
+                </RadzenStack>
+
+                <!-- Tabla de Usuarios -->
+                <RadzenDataGrid @ref="usersGrid" Data="@users" TItem="UserDto"
+                              AllowPaging="true" AllowSorting="true" PageSize="10"
+                              PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="UserDto" Property="Email" Title="Correo Electrónico" />
+                        <RadzenDataGridColumn TItem="UserDto" Property="FullName" Title="Nombre Completo" />
+                        <RadzenDataGridColumn TItem="UserDto" Property="RoleName" Title="Rol" />
+                        <RadzenDataGridColumn TItem="UserDto" Property="LastLoginDate" Title="Último Acceso">
+                            <Template Context="data">
+                                @(data.LastLoginDate.HasValue ? data.LastLoginDate.Value.ToString("dd/MM/yyyy HH:mm") : "Nunca")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="UserDto" Property="IsActive" Title="Estado">
+                            <Template Context="data">
+                                <RadzenBadge BadgeStyle="@(data.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)"
+                                           Text="@(data.IsActive ? "Activo" : "Inactivo")" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="UserDto" Title="Acciones" TextAlign="TextAlign.Center" Width="220px">
+                            <Template Context="data">
+                                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium"
+                                            Click="@(() => EditUser(data))" Class="mx-1"
+                                            ToolTip="Editar" />
+                                <RadzenButton Icon="vpn_key" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Medium"
+                                            Click="@(() => ResetPassword(data))" Class="mx-1"
+                                            ToolTip="Resetear Contraseña" />
+                                <RadzenButton Icon="@(data.IsActive ? "cancel" : "check_circle_outline")"
+                                              BadgeStyle="@(data.IsActive ? BadgeStyle.Danger : BadgeStyle.Success)"
+                                            Size="ButtonSize.Medium"
+                                            Click="@(() => ToggleUserStatus(data))" Class="mx-1"
+                                            ToolTip="@(data.IsActive ? "Desactivar" : "Activar")" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+<!-- Formulario modal para crear/editar usuario -->
+<RadzenTemplateForm TItem="UserFormModel" Data=@userFormModel Submit=@OnFormSubmit
+                    Visible=@isFormVisible style="@($"display: {(isFormVisible ? "block" : "none")};")">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenText TextStyle="TextStyle.H6" Class="mb-4">@(isEditMode ? "Editar Usuario" : "Nuevo Usuario")</RadzenText>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                        <RadzenStack>
+                            <RadzenLabel Text="Correo Electrónico" />
+                            <RadzenTextBox @bind-Value=@userFormModel.Email Class="w-100" Disabled="@isEditMode" />
+                            <RadzenRequiredValidator Component="Email" Text="El correo es requerido" />
+                            <RadzenEmailValidator Component="Email" Text="Formato de correo inválido" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                        <RadzenStack>
+                            <RadzenLabel Text="Nombre de Usuario" />
+                            <RadzenTextBox @bind-Value=@userFormModel.Username Class="w-100" />
+                            <RadzenRequiredValidator Component="Username" Text="El nombre de usuario es requerido" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                        <RadzenStack>
+                            <RadzenLabel Text="Nombre" />
+                            <RadzenTextBox @bind-Value=@userFormModel.FirstName Class="w-100" />
+                            <RadzenRequiredValidator Component="FirstName" Text="El nombre es requerido" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                        <RadzenStack>
+                            <RadzenLabel Text="Apellidos" />
+                            <RadzenTextBox @bind-Value=@userFormModel.LastName Class="w-100" />
+                            <RadzenRequiredValidator Component="LastName" Text="Los apellidos son requeridos" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    @if (!isEditMode)
+                    {
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Contraseña" />
+                                <RadzenPassword @bind-Value=@userFormModel.Password Class="w-100" />
+                                <RadzenRequiredValidator Component="Password" Text="La contraseña es requerida" />
+                                <RadzenText TextStyle="TextStyle.Caption">
+                                    La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, 
+                                    una minúscula, un número y un carácter especial.
+                                </RadzenText>
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenLabel Text="Confirmar Contraseña" />
+                                <RadzenPassword @bind-Value=@userFormModel.ConfirmPassword Class="w-100" />
+                                <RadzenRequiredValidator Component="ConfirmPassword" Text="La confirmación es requerida" />
+                                <RadzenCompareValidator Component="ConfirmPassword" Value="@userFormModel.Password" 
+                                                      Text="Las contraseñas no coinciden" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    }
+
+                    <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                        <RadzenStack>
+                            <RadzenLabel Text="Rol" />
+                            <RadzenDropDown @bind-Value=@userFormModel.RoleId Data=@roles
+                                          TextProperty="Name" ValueProperty="Id" Class="w-100" />
+                            <RadzenRequiredValidator Component="RoleId" Text="El rol es requerido" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                        <RadzenStack>
+                            <RadzenLabel Text="Número de Teléfono (opcional)" />
+                            <RadzenTextBox @bind-Value=@userFormModel.PhoneNumber Class="w-100" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" Class="mb-4">
+                        <RadzenStack>
+                            <RadzenCheckBox @bind-Value=@userFormModel.IsActive Name="IsActive" />
+                            <RadzenLabel Text="Usuario Activo" Component="IsActive" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" Class="mt-4">
+                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                            <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" Click=@CloseForm />
+                            <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary"
+                                        Text="Guardar" IsBusy=@isSaving BusyText="Guardando..." />
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenTemplateForm>
+
+@code {
+    private RadzenDataGrid<UserDto> usersGrid;
+    private List<UserDto> users = new();
+    private List<RoleDto> roles = new();
+    private string searchText = "";
+    private string selectedRole;
+    private bool isFormVisible = false;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private UserFormModel userFormModel = new();
+
+    protected override void OnInitialized()
+    {
+        LoadRoles();
+        LoadUsers();
+    }
+
+    private void LoadRoles()
+    {
+        // Datos de prueba basados en el modelo RoleModel
+        roles = new List<RoleDto>
+        {
+            new() { Id = "1", Name = "SuperAdmin" },
+            new() { Id = "2", Name = "TenantAdmin" },
+            new() { Id = "3", Name = "Billing" },
+            new() { Id = "4", Name = "Reports" }
+        };
+    }
+
+    private void LoadUsers()
+    {
+        // Datos de prueba basados en el modelo UserModel
+        users = new List<UserDto>
+        {
+            new() {
+                Id = 1,
+                Email = "admin@system.com",
+                Username = "admin",
+                FirstName = "Admin",
+                LastName = "System",
+                FullName = "Admin System",
+                RoleId = "1",
+                RoleName = "SuperAdmin",
+                PhoneNumber = "123456789",
+                LastLoginDate = DateTime.Now.AddDays(-1),
+                IsActive = true
+            },
+            new() {
+                Id = 2,
+                Email = "manager@empresa.com",
+                Username = "manager",
+                FirstName = "Gerente",
+                LastName = "Ejemplo",
+                FullName = "Gerente Ejemplo",
+                RoleId = "2",
+                RoleName = "TenantAdmin",
+                PhoneNumber = "987654321",
+                LastLoginDate = DateTime.Now.AddHours(-5),
+                IsActive = true
+            },
+            new() {
+                Id = 3,
+                Email = "facturador@empresa.com",
+                Username = "facturador",
+                FirstName = "Usuario",
+                LastName = "Facturación",
+                FullName = "Usuario Facturación",
+                RoleId = "3",
+                RoleName = "Billing",
+                PhoneNumber = "555555555",
+                LastLoginDate = DateTime.Now.AddDays(-10),
+                IsActive = true
+            },
+            new() {
+                Id = 4,
+                Email = "reportes@empresa.com",
+                Username = "reportes",
+                FirstName = "Usuario",
+                LastName = "Reportes",
+                FullName = "Usuario Reportes",
+                RoleId = "4",
+                RoleName = "Reports",
+                PhoneNumber = null,
+                LastLoginDate = null,
+                IsActive = false
+            }
+        };
+    }
+
+    private void OnSearch(string value)
+    {
+        searchText = value;
+        Search();
+    }
+
+    private void Search()
+    {
+        var filteredUsers = users.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            filteredUsers = filteredUsers.Where(u => 
+                u.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                u.FullName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                u.Username.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            );
+        }
+
+        if (!string.IsNullOrEmpty(selectedRole))
+        {
+            filteredUsers = filteredUsers.Where(u => u.RoleId == selectedRole);
+        }
+
+        users = filteredUsers.ToList();
+    }
+
+    private void ClearFilters()
+    {
+        searchText = "";
+        selectedRole = null;
+        LoadUsers();
+    }
+
+    private void OpenCreateUserDialog()
+    {
+        isEditMode = false;
+        userFormModel = new UserFormModel { IsActive = true };
+        isFormVisible = true;
+    }
+
+    private void EditUser(UserDto user)
+    {
+        isEditMode = true;
+        userFormModel = new UserFormModel
+        {
+            Id = user.Id,
+            Email = user.Email,
+            Username = user.Username,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            RoleId = user.RoleId,
+            PhoneNumber = user.PhoneNumber,
+            IsActive = user.IsActive
+        };
+        isFormVisible = true;
+    }
+
+    private async Task ResetPassword(UserDto user)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"¿Está seguro que desea resetear la contraseña de {user.FullName}?",
+            "Resetear Contraseña",
+            new ConfirmOptions() { OkButtonText = "Sí", CancelButtonText = "No" }
+        );
+        
+        if (confirmed == true)
+        {
+            // Aquí se implementaría la lógica para resetear la contraseña
+            await Task.Delay(1000); // Simular llamada API
+            ToastService.ShowSuccess($"Se ha enviado un correo a {user.Email} con instrucciones para restablecer la contraseña");
+        }
+    }
+
+    private async Task ToggleUserStatus(UserDto user)
+    {
+        var action = user.IsActive ? "desactivar" : "activar";
+        var confirmed = await DialogService.Confirm(
+            $"¿Está seguro que desea {action} a {user.FullName}?",
+            $"{(user.IsActive ? "Desactivar" : "Activar")} Usuario",
+            new ConfirmOptions() { OkButtonText = "Sí", CancelButtonText = "No" }
+        );
+        
+        if (confirmed == true)
+        {
+            try
+            {
+                user.IsActive = !user.IsActive;
+                await Task.Delay(500); // Simular llamada API
+                ToastService.ShowSuccess($"Usuario {(user.IsActive ? "activado" : "desactivado")} exitosamente");
+            }
+            catch (Exception ex)
+            {
+                ToastService.ShowError($"Error: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task OnFormSubmit()
+    {
+        try
+        {
+            isSaving = true;
+            
+            // Aquí se implementaría la lógica para guardar el usuario
+            await Task.Delay(1000); // Simular llamada API
+            
+            if (!isEditMode)
+            {
+                // Simular creación exitosa
+                var newUser = new UserDto
+                {
+                    Id = users.Count + 1,
+                    Email = userFormModel.Email,
+                    Username = userFormModel.Username,
+                    FirstName = userFormModel.FirstName,
+                    LastName = userFormModel.LastName,
+                    FullName = $"{userFormModel.FirstName} {userFormModel.LastName}",
+                    RoleId = userFormModel.RoleId,
+                    RoleName = roles.First(r => r.Id == userFormModel.RoleId).Name,
+                    PhoneNumber = userFormModel.PhoneNumber,
+                    LastLoginDate = null,
+                    IsActive = userFormModel.IsActive
+                };
+                
+                users.Add(newUser);
+                ToastService.ShowSuccess("Usuario creado exitosamente");
+            }
+            else
+            {
+                // Simular actualización exitosa
+                var userToUpdate = users.FirstOrDefault(u => u.Id == userFormModel.Id);
+                if (userToUpdate != null)
+                {
+                    userToUpdate.Username = userFormModel.Username;
+                    userToUpdate.FirstName = userFormModel.FirstName;
+                    userToUpdate.LastName = userFormModel.LastName;
+                    userToUpdate.FullName = $"{userFormModel.FirstName} {userFormModel.LastName}";
+                    userToUpdate.RoleId = userFormModel.RoleId;
+                    userToUpdate.RoleName = roles.First(r => r.Id == userFormModel.RoleId).Name;
+                    userToUpdate.PhoneNumber = userFormModel.PhoneNumber;
+                    userToUpdate.IsActive = userFormModel.IsActive;
+                }
+                
+                ToastService.ShowSuccess("Usuario actualizado exitosamente");
+            }
+            
+            CloseForm();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void CloseForm()
+    {
+        isFormVisible = false;
+        userFormModel = new UserFormModel();
+    }
+
+    // DTOs para la UI
+    private class UserDto
+    {
+        public long Id { get; set; }
+        public string Email { get; set; }
+        public string Username { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string FullName { get; set; }
+        public string RoleId { get; set; }
+        public string RoleName { get; set; }
+        public string PhoneNumber { get; set; }
+        public DateTime? LastLoginDate { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private class RoleDto
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    private class UserFormModel
+    {
+        public long Id { get; set; }
+        public string Email { get; set; }
+        public string Username { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string RoleId { get; set; }
+        public string PhoneNumber { get; set; }
+        public bool IsActive { get; set; }
+        public string Password { get; set; }
+        public string ConfirmPassword { get; set; }
+    }
+}

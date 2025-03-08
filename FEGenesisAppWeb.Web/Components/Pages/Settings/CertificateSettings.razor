@@ -1,1 +1,228 @@
-﻿
+﻿@page "/configuracion/certificados"
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject DialogService DialogService
+
+<PageTitle>Certificados Digitales - GenesisFE</PageTitle>
+
+<div class="container-fluid">
+    <RadzenRow class="mb-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" JustifyContent="JustifyContent.SpaceBetween">
+                <RadzenText TextStyle="TextStyle.H3">Certificados Digitales</RadzenText>
+                <RadzenButton Icon="add" Text="Subir Certificado" ButtonStyle="ButtonStyle.Primary"
+                              Click="@OpenCertificateUploadDialog" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                @if (!certificates.Any())
+                {
+                    <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center"
+                                 Class="py-5">
+                        <RadzenIcon Icon="card_membership" Style="font-size: 48px; color: var(--rz-text-disabled-color);" />
+                        <RadzenText TextStyle="TextStyle.H6" Class="mt-4 mb-2">No hay certificados digitales</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1">Sube tu certificado digital para firmar documentos electrónicos</RadzenText>
+                        <RadzenButton Icon="add" Text="Subir Certificado" ButtonStyle="ButtonStyle.Secondary" Class="mt-4"
+                                      Click="@OpenCertificateUploadDialog" />
+                    </RadzenStack>
+                }
+                else
+                {
+                    <RadzenDataGrid Data="@certificates" TItem="CertificateModel" AllowPaging="true" PageSize="10">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="CertificateModel" Property="Name" Title="Nombre" />
+                            <RadzenDataGridColumn TItem="CertificateModel" Property="ExpirationDate" Title="Fecha de Expiración">
+                                <Template Context="data">
+                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                        @data.ExpirationDate.ToShortDateString()
+                                        @if (IsCertificateExpiringSoon(data.ExpirationDate))
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="Expira pronto" />
+                                        }
+                                        @if (IsCertificateExpired(data.ExpirationDate))
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Expirado" />
+                                        }
+                                    </RadzenStack>
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="CertificateModel" Property="CreatedAt" Title="Fecha de Creación">
+                                <Template Context="data">
+                                    @data.CreatedAt.ToShortDateString()
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="CertificateModel" Property="IsActive" Title="Estado">
+                                <Template Context="data">
+                                    <RadzenBadge BadgeStyle="@(data.IsActive ? BadgeStyle.Success : BadgeStyle.Light)"
+                                                 Text="@(data.IsActive ? "Activo" : "Inactivo")" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="CertificateModel" Title="Acciones" TextAlign="TextAlign.Center" Width="220px">
+                                <Template Context="data">
+                                    <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Medium"
+                                                  Click="@(() => ViewCertificateDetails(data))" Class="mx-1"
+                                                  ToolTip="Ver Detalles" />
+                                    <RadzenButton Icon="@(data.IsActive ? "cancel" : "check_circle_outline")"
+                                                  BadgeStyle="@(data.IsActive ? BadgeStyle.Danger : BadgeStyle.Success)"
+                                                  Size="ButtonSize.Medium"
+                                                  Click="@(() => ToggleCertificateStatus(data))" Class="mx-1"
+                                                  ToolTip="@(data.IsActive ? "Desactivar" : "Activar")" />
+                                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Medium"
+                                                  Click="@(() => DeleteCertificate(data))" Class="mx-1"
+                                                  ToolTip="Eliminar" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+                }
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    @if (certificates.Any())
+    {
+        <RadzenRow class="mt-4">
+            <RadzenColumn Size="12">
+                <RadzenCard>
+                    <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Información Importante</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" Style="text-align: justify;">
+                        El certificado digital es un archivo que permite firmar documentos electrónicos con validez legal.
+                        Para la facturación electrónica en Costa Rica, debe utilizar un certificado digital emitido por un
+                        certificador registrado ante el Ministerio de Hacienda. Este certificado debe mantenerse actualizado
+                        y seguro, ya que es la garantía de autenticidad de sus documentos electrónicos.
+                    </RadzenText>
+                    <RadzenCard Class="mt-4 p-3" Style="background-color: var(--rz-warning-lighter);">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                            <RadzenIcon Icon="warning" Style="color: var(--rz-warning-dark);" />
+                            <RadzenText TextStyle="TextStyle.Body1">
+                                Asegúrese de renovar su certificado antes de que expire para evitar problemas con la
+                                emisión de documentos electrónicos.
+                            </RadzenText>
+                        </RadzenStack>
+                    </RadzenCard>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+    }
+</div>
+
+@code {
+    private List<CertificateModel> certificates = new();
+
+    protected override void OnInitialized()
+    {
+        LoadCertificates();
+    }
+
+    private void LoadCertificates()
+    {
+        // Datos ficticios basados en el modelo DigitalCertificateModel
+        certificates = new List<CertificateModel>
+        {
+            new() {
+                Id = 1,
+                Name = "Certificado de Producción",
+                ExpirationDate = DateTime.Now.AddMonths(8),
+                CreatedAt = DateTime.Now.AddYears(-1),
+                IsActive = true
+            },
+            new() {
+                Id = 2,
+                Name = "Certificado de Pruebas",
+                ExpirationDate = DateTime.Now.AddDays(15),
+                CreatedAt = DateTime.Now.AddMonths(-8),
+                IsActive = true
+            },
+            new() {
+                Id = 3,
+                Name = "Certificado Antiguo",
+                ExpirationDate = DateTime.Now.AddMonths(-2),
+                CreatedAt = DateTime.Now.AddYears(-2),
+                IsActive = false
+            }
+        };
+    }
+
+    private async Task OpenCertificateUploadDialog()
+    {
+        var result = await DialogService.OpenAsync<CertificateUploadDialog>("Subir Certificado Digital");
+
+        if (result == true)
+        {
+            ToastService.ShowSuccess("Certificado subido exitosamente");
+            // Aquí se implementaría la recarga de certificados desde la API
+            LoadCertificates();
+        }
+    }
+
+    private void ViewCertificateDetails(CertificateModel certificate)
+    {
+        // Aquí se implementaría la apertura de un diálogo con los detalles del certificado
+        ToastService.ShowInfo($"Ver detalles del certificado: {certificate.Name}");
+    }
+
+    private async Task ToggleCertificateStatus(CertificateModel certificate)
+    {
+        try
+        {
+            // Simulación de cambio de estado
+            certificate.IsActive = !certificate.IsActive;
+            await Task.Delay(500); // Simular llamada API
+
+            ToastService.ShowSuccess($"Estado del certificado actualizado: {(certificate.IsActive ? "Activado" : "Desactivado")}");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error al cambiar el estado: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteCertificate(CertificateModel certificate)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"¿Está seguro que desea eliminar el certificado '{certificate.Name}'?",
+            "Eliminar Certificado",
+            new ConfirmOptions() { OkButtonText = "Sí", CancelButtonText = "No" });
+
+        if (confirmed == true)
+        {
+            try
+            {
+                // Simulación de eliminación
+                certificates.Remove(certificate);
+                await Task.Delay(500); // Simular llamada API
+
+                ToastService.ShowSuccess("Certificado eliminado exitosamente");
+            }
+            catch (Exception ex)
+            {
+                ToastService.ShowError($"Error al eliminar el certificado: {ex.Message}");
+            }
+        }
+    }
+
+    private bool IsCertificateExpiringSoon(DateTime expirationDate)
+    {
+        // Considerar que expira pronto si quedan menos de 30 días
+        return expirationDate > DateTime.Now && expirationDate < DateTime.Now.AddDays(30);
+    }
+
+    private bool IsCertificateExpired(DateTime expirationDate)
+    {
+        return expirationDate < DateTime.Now;
+    }
+
+    // DTO para trabajar con certificados en la UI
+    private class CertificateModel
+    {
+        public long Id { get; set; }
+        public string Name { get; set; }
+        public DateTime ExpirationDate { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsActive { get; set; }
+    }
+}

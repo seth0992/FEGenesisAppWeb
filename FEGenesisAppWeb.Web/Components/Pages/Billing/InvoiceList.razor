@@ -7,7 +7,7 @@
 <div class="container-fluid">
     <RadzenRow class="mb-4">
         <RadzenColumn Size="12">
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" JustifyContent="JustifyContent.SpaceBetween">
                 <RadzenText TextStyle="TextStyle.H3">Facturas Electrónicas</RadzenText>
                 <RadzenButton Icon="add" Text="Nueva Factura" ButtonStyle="ButtonStyle.Primary"
                               Click="@(() => NavigationManager.NavigateTo("/facturacion/nueva"))" />
@@ -44,7 +44,7 @@
 
                 <!-- Tabla de Facturas -->
                 <RadzenDataGrid @ref="invoiceGrid" Data="@invoices" TItem="InvoiceData"
-                                AllowPaging="true" AllowSorting="true" PageSize="10"
+                                AllowPaging="true" AllowSorting="true" PageSize="10" AllowColumnResize="true"
                                 PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true">
                     <Columns>
                         <RadzenDataGridColumn TItem="InvoiceData" Property="DocumentType" Title="Tipo"
@@ -76,7 +76,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="InvoiceData" Title="Acciones" TextAlign="TextAlign.Center" Width="220px">
+                        <RadzenDataGridColumn TItem="InvoiceData" Title="Acciones" TextAlign="TextAlign.Left" Width="220px">
                             <Template Context="data">
                                 <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Medium"
                                               Click="@(() => ViewInvoice(data.Id))" Class="mx-1"

@@ -13,6 +13,7 @@ using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using FEGenesisAppWeb.Core.Services.Catalog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,6 +78,7 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHttpContextAccessor();
+
 
 #region servicios para autenticación
 // Authentication services

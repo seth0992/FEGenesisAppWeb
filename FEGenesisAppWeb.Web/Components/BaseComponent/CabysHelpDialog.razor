@@ -1,0 +1,38 @@
+﻿@inject DialogService DialogService
+
+<div class="container p-3">
+    <RadzenText TextStyle="TextStyle.H5" Class="mb-3">Sobre CAByS</RadzenText>
+
+    <RadzenText TextStyle="TextStyle.Body1" Class="mb-4" Style="text-align: justify;">
+        El Catálogo de Bienes y Servicios (CAByS) es un catálogo estandarizado creado por el Ministerio de Hacienda
+        de Costa Rica que clasifica y codifica todos los bienes y servicios que se comercializan en el país para efectos
+        de la facturación electrónica.
+    </RadzenText>
+
+    <RadzenText TextStyle="TextStyle.H6" Class="mb-2">Consejos para la búsqueda:</RadzenText>
+    <RadzenCard Class="mb-4">
+        <ul style="margin-left: 20px; padding-left: 0;">
+            <li class="mb-2">Busque por palabras clave que describen su producto o servicio.</li>
+            <li class="mb-2">Puede buscar por código si ya conoce el código CAByS específico.</li>
+            <li class="mb-2">Si no encuentra resultados, intente con términos más generales.</li>
+            <li class="mb-2">Si sabe la categoría general, incluya ese término en la búsqueda.</li>
+        </ul>
+    </RadzenCard>
+
+    <RadzenText TextStyle="TextStyle.H6" Class="mb-2">Ejemplo de búsquedas efectivas:</RadzenText>
+    <RadzenCard Class="mb-4">
+        <ul style="margin-left: 20px; padding-left: 0;">
+            <li class="mb-2">Para encontrar productos de café: "café" o "café molido"</li>
+            <li class="mb-2">Para servicios de consultoría: "consultoría" o "asesoría"</li>
+            <li class="mb-2">Para materiales de construcción: "cemento" o "bloque"</li>
+        </ul>
+    </RadzenCard>
+
+    <RadzenText TextStyle="TextStyle.Caption" Class="mt-4">
+        Para más información sobre CAByS, puede visitar el sitio oficial del Ministerio de Hacienda.
+    </RadzenText>
+
+    <div class="text-center mt-4">
+        <RadzenButton Text="Cerrar" ButtonStyle="ButtonStyle.Secondary" Click=@(() => DialogService.Close()) />
+    </div>
+</div>

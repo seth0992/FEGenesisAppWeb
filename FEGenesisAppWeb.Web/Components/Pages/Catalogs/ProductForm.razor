@@ -1,17 +1,20 @@
 ﻿@page "/catalogs/products/new"
 @page "/catalogs/products/edit/{Id:int}"
+@using FEGenesisAppWeb.Models.Models.Catalog
+@using FEGenesisAppWeb.Web.Components.BaseComponent
+@using FEGenesisAppWeb.Web.Services
 @inject NavigationManager NavigationManager
 @inject IToastService ToastService
+@inject DialogService DialogService
 
-<PageTitle>@(Id == null ? "New Product" : "Edit Product") - GenesisFE</PageTitle>
+<PageTitle>@(Id == null ? "Nuevo Producto" : "Editar Producto") - GenesisFE</PageTitle>
 
 <div class="container-fluid">
-    @* Header section with back button and title *@
     <RadzenRow class="mb-4">
         <RadzenColumn Size="12">
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
                 <RadzenButton Icon="arrow_back" Click="@(() => NavigationManager.NavigateTo("/catalogs/products"))" />
-                <RadzenText TextStyle="TextStyle.H3">@(Id == null ? "New Product" : "Edit Product")</RadzenText>
+                <RadzenText TextStyle="TextStyle.H3">@(Id == null ? "Nuevo Producto" : "Editar Producto")</RadzenText>
             </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
@@ -23,17 +26,17 @@
                     @* Basic Information Section *@
                     <RadzenRow>
                         <RadzenColumn Size="12">
-                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Basic Information</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Información Básica</RadzenText>
                         </RadzenColumn>
 
                         @* Product Type Selection *@
                         <RadzenColumn Size="12" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Product Type" />
+                                <RadzenLabel Text="Tipo de Producto" />
                                 <RadzenSelectBar @bind-Value=@model.IsService TValue="bool">
                                     <Items>
-                                        <RadzenSelectBarItem Text="Product" Value="false" />
-                                        <RadzenSelectBarItem Text="Service" Value="true" />
+                                        <RadzenSelectBarItem Text="Producto" Value="false" />
+                                        <RadzenSelectBarItem Text="Servicio" Value="true" />
                                     </Items>
                                 </RadzenSelectBar>
                             </RadzenStack>
@@ -42,25 +45,38 @@
                         @* Product Code *@
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Product Code" />
+                                <RadzenLabel Text="Código de Producto" />
                                 <RadzenTextBox @bind-Value=@model.Code Class="w-100" />
-                                <RadzenRequiredValidator Component="Code" Text="Code is required" />
+                                <RadzenRequiredValidator Component="Code" Text="El código es requerido" />
                             </RadzenStack>
                         </RadzenColumn>
 
                         @* CAByS Code *@
-                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
+                        <RadzenColumn Size="12" SizeMD="8" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="CAByS Code" />
-                                <RadzenTextBox @bind-Value=@model.CabysCode Class="w-100" />
-                                <RadzenRequiredValidator Component="CabysCode" Text="CAByS code is required" />
+                                <RadzenLabel Text="Código CAByS" />
+                                <RadzenRow>
+                                    <RadzenColumn Size="8">
+                                        <RadzenTextBox @bind-Value=@model.CabysCode Class="w-100" Disabled="@isCabysSelected" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="4">
+                                        <RadzenButton Click=@OpenCabysSearchDialog Text="Buscar CAByS" ButtonStyle="ButtonStyle.Secondary" />
+                                    </RadzenColumn>
+                                </RadzenRow>
+                                <RadzenRequiredValidator Component="CabysCode" Text="El código CAByS es requerido" />
+                                @if (selectedCabysItem != null)
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="margin-top: 5px;">
+                                        @selectedCabysItem.Description - IVA: @selectedCabysItem.TaxRate%
+                                    </RadzenText>
+                                }
                             </RadzenStack>
                         </RadzenColumn>
 
                         @* Category *@
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Category" />
+                                <RadzenLabel Text="Categoría" />
                                 <RadzenDropDown @bind-Value=@model.CategoryId
                                                 Data=@categories
                                                 TextProperty="Name"
@@ -70,31 +86,31 @@
                         </RadzenColumn>
 
                         @* Product Name *@
-                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                        <RadzenColumn Size="12" SizeMD="8" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Name" />
+                                <RadzenLabel Text="Nombre" />
                                 <RadzenTextBox @bind-Value=@model.Name Class="w-100" />
-                                <RadzenRequiredValidator Component="Name" Text="Name is required" />
+                                <RadzenRequiredValidator Component="Name" Text="El nombre es requerido" />
                             </RadzenStack>
                         </RadzenColumn>
 
                         @* Unit of Measure *@
-                        <RadzenColumn Size="12" SizeMD="6" Class="mb-4">
+                        <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Unit of Measure" />
+                                <RadzenLabel Text="Unidad de Medida" />
                                 <RadzenDropDown @bind-Value=@model.UnitOfMeasure
                                                 Data=@unitsOfMeasure
                                                 TextProperty="Name"
                                                 ValueProperty="Code"
                                                 Class="w-100" />
-                                <RadzenRequiredValidator Component="UnitOfMeasure" Text="Unit of measure is required" />
+                                <RadzenRequiredValidator Component="UnitOfMeasure" Text="La unidad de medida es requerida" />
                             </RadzenStack>
                         </RadzenColumn>
 
                         @* Description *@
-                        <RadzenColumn Size="12" Class="mb-4">
+                        <RadzenColumn Size="12" SizeMD="8" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Description" />
+                                <RadzenLabel Text="Descripción" />
                                 <RadzenTextArea @bind-Value=@model.Description Rows="3" Class="w-100" />
                             </RadzenStack>
                         </RadzenColumn>
@@ -103,40 +119,55 @@
                     @* Price and Tax Section *@
                     <RadzenRow Class="mt-4">
                         <RadzenColumn Size="12">
-                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Price and Tax</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Precio e Impuesto</RadzenText>
                         </RadzenColumn>
 
                         @* Unit Price *@
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Unit Price" />
+                                <RadzenLabel Text="Precio Unitario" />
                                 <RadzenNumeric @bind-Value=@model.UnitPrice TValue="decimal"
                                                Format="c2" Class="w-100" />
                                 <RadzenRequiredValidator Component="UnitPrice"
-                                                         Text="Unit price is required and must be greater than 0" />
+                                                         Text="El precio unitario es requerido y debe ser mayor a 0" />
                             </RadzenStack>
                         </RadzenColumn>
 
                         @* Tax Type *@
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Tax Type" />
+                                <RadzenLabel Text="Tipo de Impuesto" />
                                 <RadzenDropDown @bind-Value=@model.TaxTypeId
                                                 Data=@taxTypes
                                                 TextProperty="Name"
                                                 ValueProperty="Id"
                                                 Change=@OnTaxTypeChange
-                                                Class="w-100" />
-                                <RadzenRequiredValidator Component="TaxTypeId" Text="Tax type is required" />
+                                                Class="w-100"
+                                                Disabled="@isCabysSelected" />
+                                <RadzenRequiredValidator Component="TaxTypeId" Text="El tipo de impuesto es requerido" />
                             </RadzenStack>
                         </RadzenColumn>
 
                         @* Tax Rate (Read-only) *@
                         <RadzenColumn Size="12" SizeMD="4" Class="mb-4">
                             <RadzenStack>
-                                <RadzenLabel Text="Tax Rate (%)" />
+                                <RadzenLabel Text="Tarifa de Impuesto (%)" />
                                 <RadzenNumeric @bind-Value=@model.TaxRate TValue="decimal"
                                                Format="n2" Disabled="true" Class="w-100" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @* Status Section *@
+                    <RadzenRow Class="mt-4">
+                        <RadzenColumn Size="12">
+                            <RadzenText TextStyle="TextStyle.H6" Class="mb-4">Estado</RadzenText>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" Class="mb-4">
+                            <RadzenStack>
+                                <RadzenCheckBox @bind-Value=@model.IsActive Name="IsActive" />
+                                <RadzenLabel Text="Producto Activo" Component="IsActive" />
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>
@@ -146,13 +177,13 @@
                         <RadzenColumn Size="12">
                             <RadzenStack Orientation="Orientation.Horizontal"
                                          JustifyContent="JustifyContent.End" Gap="1rem">
-                                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel"
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar"
                                               Click="@(() => NavigationManager.NavigateTo("/catalogs/products"))" />
                                 <RadzenButton ButtonType="ButtonType.Submit"
                                               ButtonStyle="ButtonStyle.Primary"
-                                              Text="Save"
+                                              Text="Guardar"
                                               IsBusy=@isSaving
-                                              BusyText="Saving..." />
+                                              BusyText="Guardando..." />
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>
@@ -168,6 +199,8 @@
 
     private ProductFormModel model = new();
     private bool isSaving;
+    private bool isCabysSelected;
+    private CabysItemDto selectedCabysItem;
     private List<CategoryData> categories = new();
     private List<UnitOfMeasure> unitsOfMeasure = new();
     private List<TaxTypeData> taxTypes = new();
@@ -198,9 +231,9 @@
         // Mock categories
         categories = new List<CategoryData>
         {
-            new() { Id = "1", Name = "Electronics" },
-            new() { Id = "2", Name = "Services" },
-            new() { Id = "3", Name = "Office Supplies" },
+            new() { Id = "1", Name = "Electrónicos" },
+            new() { Id = "2", Name = "Servicios" },
+            new() { Id = "3", Name = "Suministros de Oficina" },
             new() { Id = "4", Name = "Software" },
             new() { Id = "5", Name = "Hardware" }
         };
@@ -208,12 +241,12 @@
         // Mock units of measure
         unitsOfMeasure = new List<UnitOfMeasure>
         {
-            new() { Code = "UN", Name = "Unit" },
-            new() { Code = "HR", Name = "Hour" },
-            new() { Code = "KG", Name = "Kilogram" },
-            new() { Code = "MT", Name = "Meter" },
-            new() { Code = "LT", Name = "Liter" },
-            new() { Code = "SV", Name = "Service" }
+            new() { Code = "UN", Name = "Unidad" },
+            new() { Code = "HR", Name = "Hora" },
+            new() { Code = "KG", Name = "Kilogramo" },
+            new() { Code = "MT", Name = "Metro" },
+            new() { Code = "LT", Name = "Litro" },
+            new() { Code = "SV", Name = "Servicio" }
         };
 
         // Mock tax types based on Costa Rica's tax system
@@ -223,7 +256,7 @@
             new() { Id = "02", Name = "IVA 2%", Rate = 2 },
             new() { Id = "03", Name = "IVA 1%", Rate = 1 },
             new() { Id = "04", Name = "IVA 4%", Rate = 4 },
-            new() { Id = "05", Name = "Exempt", Rate = 0 }
+            new() { Id = "05", Name = "Exento", Rate = 0 }
         };
     }
 
@@ -237,7 +270,7 @@
                     Code = "P001",
                     CabysCode = "1234567890",
                     Name = "Laptop Dell Latitude",
-                    Description = "Business laptop computer",
+                    Description = "Computadora portátil para negocios",
                     CategoryId = "1",
                     UnitOfMeasure = "UN",
                     UnitPrice = 750000,
@@ -246,6 +279,14 @@
                     IsService = false,
                     IsActive = true
                 };
+
+            selectedCabysItem = new CabysItemDto
+                {
+                    Code = "1234567890",
+                    Description = "Computadoras portátiles",
+                    TaxRate = 13
+                };
+            isCabysSelected = true;
         }
     }
 
@@ -261,6 +302,53 @@
         }
     }
 
+    private async Task OpenCabysSearchDialog()
+    {
+        var options = new DialogOptions
+            {
+                Width = "900px",
+                Height = "500px",                
+                ShowClose = true,
+                CloseDialogOnOverlayClick = false
+            };
+
+        var result = await DialogService.OpenAsync<CabysSearchDialog>("Búsqueda de Código CAByS",
+            new Dictionary<string, object>(),
+            options);
+
+        if (result != null)
+        {
+            var cabysItem = (CabysItemDto)result;
+            model.CabysCode = cabysItem.Code;
+            selectedCabysItem = cabysItem;
+            isCabysSelected = true;
+
+            // Actualizar también el tipo de impuesto basado en la información del CAByS
+            var taxType = taxTypes.FirstOrDefault(t => t.Rate == cabysItem.TaxRate);
+            if (taxType != null)
+            {
+                model.TaxTypeId = taxType.Id;
+                model.TaxRate = taxType.Rate;
+            }
+            else
+            {
+                // Si no se encuentra un tipo de impuesto exacto, usar el más cercano
+                ToastService.ShowWarning("No se encontró un tipo de impuesto exacto para la tarifa del CAByS. Se utilizará el valor más cercano.");
+                model.TaxRate = cabysItem.TaxRate;
+
+                // Buscar el tipo de impuesto más cercano
+                var closestTaxType = taxTypes
+                    .OrderBy(t => Math.Abs(t.Rate - cabysItem.TaxRate))
+                    .FirstOrDefault();
+
+                if (closestTaxType != null)
+                {
+                    model.TaxTypeId = closestTaxType.Id;
+                }
+            }
+        }
+    }
+
     private async Task OnSubmit()
     {
         try
@@ -270,21 +358,22 @@
             // Validate unit price
             if (model.UnitPrice <= 0)
             {
-                ToastService.ShowError("Unit price must be greater than 0");
+                ToastService.ShowError("El precio unitario debe ser mayor a 0");
+                isSaving = false;
                 return;
             }
 
-            // Here we will implement the API call to save the product
+            // Here we would implement the API call to save the product
             await Task.Delay(1000); // Simulate API call
 
             ToastService.ShowSuccess(
-                Id.HasValue ? "Product updated successfully" : "Product created successfully"
+                Id.HasValue ? "Producto actualizado exitosamente" : "Producto creado exitosamente"
             );
             NavigationManager.NavigateTo("/catalogs/products");
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error saving product: {ex.Message}");
+            ToastService.ShowError($"Error al guardar el producto: {ex.Message}");
         }
         finally
         {

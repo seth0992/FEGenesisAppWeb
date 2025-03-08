@@ -1,0 +1,230 @@
+﻿@using FEGenesisAppWeb.Models.Models
+@inject ApiClient ApiClient
+@inject DialogService DialogService
+@inject IToastService ToastService
+
+<div class="container">
+    <RadzenRow class="mb-3">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" JustifyContent="JustifyContent.SpaceBetween">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                    <RadzenTextBox @bind-Value=@searchText Placeholder="Buscar por descripción o código..."
+                                   Change=@OnSearchTextChange Class="w-100" Style="min-width: 300px;"
+                                   KeyPress=@OnKeyPress />
+                    <RadzenButton Icon="search" Text="Buscar" ButtonStyle="ButtonStyle.Primary" Click=@Search
+                                  IsBusy=@isSearching BusyText="Buscando..." />
+                </RadzenStack>
+                <RadzenButton Icon="help_outline" Text="Ayuda" ButtonStyle="ButtonStyle.Light" Click=@ShowHelp />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            @if (isSearching)
+            {
+                <RadzenProgressBar Value="100" Mode="ProgressBarMode.Indeterminate" />
+            }
+            else if (!hasSearched)
+            {
+                <RadzenCard Class="my-3 py-5">
+                    <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center">
+                        <RadzenIcon Icon="search" Style="font-size: 48px; color: var(--rz-text-disabled-color);" />
+                        <RadzenText TextStyle="TextStyle.H6" Class="mt-4 mb-2">Buscar Códigos CAByS</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1" Style="text-align: center; max-width: 500px;">
+                            Ingrese un texto para buscar códigos CAByS por descripción o por código.
+                            Puede buscar palabras completas o parciales.
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenCard>
+            }
+            else if (cabysItems.Count == 0)
+            {
+                <RadzenCard Class="my-3 py-5">
+                    <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center">
+                        <RadzenIcon Icon="search_off" Style="font-size: 48px; color: var(--rz-text-disabled-color);" />
+                        <RadzenText TextStyle="TextStyle.H6" Class="mt-4 mb-2">No se encontraron resultados</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            Intente con otro término de búsqueda.
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenCard>
+            }
+            else
+            {
+                <RadzenDataGrid @ref="cabysGrid" Data="@cabysItems" TItem="CabysItemDto"
+                                AllowPaging="true" AllowSorting="true" PageSize="10"
+                                SelectionMode="DataGridSelectionMode.Single"
+                                @bind-Value=@selectedItems
+                                RowDoubleClick=@RowDoubleClick>
+                    <Columns>
+                        <RadzenDataGridColumn TItem="CabysItemDto" Property="Code" Title="Código" Width="120px" />
+                        <RadzenDataGridColumn TItem="CabysItemDto" Property="Description" Title="Descripción" />
+                        <RadzenDataGridColumn TItem="CabysItemDto" Property="TaxRate" Title="Impuesto" Width="100px">
+                            <Template Context="data">
+                                @data.TaxRate%
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow class="mt-4">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click=@Cancel />
+                <RadzenButton Text="Seleccionar" ButtonStyle="ButtonStyle.Primary"
+                              Click=@SelectCabys Disabled=@(selectedItems.Count == 0) />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
+@code {
+    private string searchText = "";
+    private bool isSearching;
+    private bool hasSearched;
+    private List<CabysItemDto> cabysItems = new();
+    private IList<CabysItemDto> selectedItems = new List<CabysItemDto>();
+    private RadzenDataGrid<CabysItemDto> cabysGrid;
+    private int currentPage = 1;
+    private const int PageSize = 10;
+
+    private async Task OnSearchTextChange(string value)
+    {
+        searchText = value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            cabysItems.Clear();
+            hasSearched = false;
+        }
+    }
+
+    private async Task OnKeyPress(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await Search();
+        }
+    }
+
+    private async Task Search()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            ToastService.ShowWarning("Ingrese un término de búsqueda");
+            return;
+        }
+
+        try
+        {
+            isSearching = true;
+            hasSearched = true;
+            currentPage = 1;
+
+            // Llamar al controlador de la API
+            var response = await ApiClient.GetFromJsonAsync<BaseResponseModel>(
+                $"/api/cabys/search?query={Uri.EscapeDataString(searchText)}&page={currentPage}&pageSize={PageSize}");
+
+            if (response.Success)
+            {
+                cabysItems = DeserializeCabysItems(response.Data);
+            }
+            else
+            {
+                ToastService.ShowError(response.ErrorMessage ?? "Error al buscar códigos CABYS");
+                cabysItems.Clear();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error al buscar códigos CABYS: {ex.Message}");
+            cabysItems.Clear();
+        }
+        finally
+        {
+            isSearching = false;
+        }
+    }
+
+    private List<CabysItemDto> DeserializeCabysItems(object data)
+    {
+        var items = new List<CabysItemDto>();
+
+        try
+        {
+            // Convertir el objeto a JsonElement
+            var jsonString = System.Text.Json.JsonSerializer.Serialize(data);
+            var jsonElement = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(jsonString);
+
+            // Extraer los resultados
+            if (jsonElement.TryGetProperty("results", out var results) &&
+                results.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var item in results.EnumerateArray())
+                {
+                    var cabysItem = new CabysItemDto();
+
+                    if (item.TryGetProperty("codigo", out var codigo))
+                    {
+                        cabysItem.Code = codigo.GetString();
+                    }
+
+                    if (item.TryGetProperty("descripcion", out var descripcion))
+                    {
+                        cabysItem.Description = descripcion.GetString();
+                    }
+
+                    if (item.TryGetProperty("impuesto", out var impuesto) &&
+                        impuesto.TryGetProperty("tarifa", out var tarifa))
+                    {
+                        cabysItem.TaxRate = tarifa.GetDecimal();
+                    }
+
+                    items.Add(cabysItem);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error al procesar los datos: {ex.Message}");
+        }
+
+        return items;
+    }
+
+    private void ShowHelp()
+    {
+        DialogService.Open<CabysHelpDialog>("Ayuda CAByS",
+            new Dictionary<string, object>(),
+            new DialogOptions { Width = "600px", Height = "400px" });
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close();
+    }
+
+    private void SelectCabys()
+    {
+        if (selectedItems.Count > 0)
+        {
+            DialogService.Close(selectedItems.First());
+        }
+    }
+
+    private void RowDoubleClick(DataGridRowMouseEventArgs<CabysItemDto> args)
+    {
+        DialogService.Close(args.Data);
+    }
+
+    // Clase DTO para manejar los resultados de CABYS
+    public class CabysItemDto
+    {
+        public string Code { get; set; }
+        public string Description { get; set; }
+        public decimal TaxRate { get; set; }
+    }
+}

@@ -58,20 +58,20 @@
                     </RadzenPanelMenuItem>
 
                     <RadzenPanelMenuItem Text="Productos" Icon="inventory">
-                        <RadzenPanelMenuItem Text="Nuevo Producto" Path="/productos/nuevo" Icon="add" />
+                        <RadzenPanelMenuItem Text="Nuevo Producto" Path="/catalogs/products/new" Icon="add" />
                         <RadzenPanelMenuItem Text="Listado de Productos" Path="/productos/listado" Icon="list" />
                     </RadzenPanelMenuItem>
 
                     <RadzenPanelMenuItem Text="Reportes" Icon="assessment">
-                        <RadzenPanelMenuItem Text="Ventas por Período" Path="/reports/sales" Icon="bar_chart" />
-                        <RadzenPanelMenuItem Text="Clientes" Path="/reports/clients" Icon="people" />
-                        <RadzenPanelMenuItem Text="Productos" Path="/reports/products" Icon="inventory" />
+                        <RadzenPanelMenuItem Text="Ventas por Período" Path="/reportes/ventas" Icon="bar_chart" />
+                        <RadzenPanelMenuItem Text="Clientes" Path="/reportes/clientes" Icon="people" />
+                        <RadzenPanelMenuItem Text="Productos" Path="/reportes/productos" Icon="inventory" />
                     </RadzenPanelMenuItem>
 
                     <AuthorizeView Roles="SuperAdmin,TenantAdmin" Context="authAdmin">
                         <Authorized>
                             <RadzenPanelMenuItem Text="Configuración" Icon="settings">
-                                <RadzenPanelMenuItem Text="Empresa" Path="/configuracion/empresa" Icon="business" />
+                                <RadzenPanelMenuItem Text="Empresa" Path="/configuration/company" Icon="business" />
                                 <RadzenPanelMenuItem Text="Usuarios" Path="/configuracion/usuarios" Icon="people" />
                                 <RadzenPanelMenuItem Text="Certificados" Path="/configuracion/certificados" Icon="security" />
                             </RadzenPanelMenuItem>
@@ -88,8 +88,8 @@
     </RadzenBody>
     <RadzenFooter>
         <div class="container-fluid d-flex justify-content-between align-items-center">
-            <span>© 2024 GenesisFE Web - Versión 1.0</span>
-            <span>Desarrollado por seth</span>
+            <span>© 2025 GenesisFE Web - Versión 1.0</span>
+           @*  <span>Desarrollado por seth</span> *@
         </div>
     </RadzenFooter>
 </RadzenLayout>

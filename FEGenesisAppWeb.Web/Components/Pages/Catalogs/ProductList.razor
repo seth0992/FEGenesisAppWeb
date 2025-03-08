@@ -2,15 +2,18 @@
 @inject NavigationManager NavigationManager
 @inject IToastService ToastService
 
-<PageTitle>Products Catalog - GenesisFE</PageTitle>
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>Catálogo de Productos - GenesisFE</PageTitle>
 
 <div class="container-fluid">
-    @* Header section with title and new product button *@
+    @* Sección de encabezado con título y botón de nuevo producto *@
     <RadzenRow class="mb-4">
         <RadzenColumn Size="12">
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-                <RadzenText TextStyle="TextStyle.H3">Products Catalog</RadzenText>
-                <RadzenButton Icon="add" Text="New Product" ButtonStyle="ButtonStyle.Primary"
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" JustifyContent="JustifyContent.SpaceBetween">
+                <RadzenText TextStyle="TextStyle.H3">Catálogo de Productos</RadzenText>
+                <RadzenButton Icon="add" Text="Nuevo Producto" ButtonStyle="ButtonStyle.Primary"
                               Click="@(() => NavigationManager.NavigateTo("/catalogs/products/new"))" />
             </RadzenStack>
         </RadzenColumn>
@@ -19,49 +22,49 @@
     <RadzenRow>
         <RadzenColumn Size="12">
             <RadzenCard>
-                @* Search and filter section *@
+                @* Sección de búsqueda y filtros *@
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Class="mb-4">
-                    <RadzenTextBox Placeholder="Search by code or name..." Style="width: 300px;"
+                    <RadzenTextBox Placeholder="Buscar por código o nombre..." Style="width: 300px;"
                                    @bind-Value=@searchText Change=@(args => OnSearch(args)) />
 
                     <RadzenDropDown Data=@categories @bind-Value=@selectedCategory
                                     TextProperty="Name" ValueProperty="Id"
-                                    AllowClear="true" Placeholder="Category"
+                                    AllowClear="true" Placeholder="Categoría"
                                     Class="w-100" Style="max-width: 200px;" />
 
                     <RadzenDropDown Data=@taxTypes @bind-Value=@selectedTaxType
                                     TextProperty="Name" ValueProperty="Id"
-                                    AllowClear="true" Placeholder="Tax Type"
+                                    AllowClear="true" Placeholder="Tipo de Impuesto"
                                     Class="w-100" Style="max-width: 200px;" />
 
-                    <RadzenButton Icon="search" Text="Search" ButtonStyle="ButtonStyle.Secondary" Click=@Search />
-                    <RadzenButton Icon="refresh" Text="Clear" ButtonStyle="ButtonStyle.Light" Click=@ClearFilters />
+                    <RadzenButton Icon="search" Text="Buscar" ButtonStyle="ButtonStyle.Secondary" Click=@Search />
+                    <RadzenButton Icon="refresh" Text="Limpiar" ButtonStyle="ButtonStyle.Light" Click=@ClearFilters />
                 </RadzenStack>
 
-                @* Products data grid *@
+                @* Tabla de datos de productos *@
                 <RadzenDataGrid @ref="productsGrid" Data="@products" TItem="ProductData"
                                 AllowPaging="true" AllowSorting="true" PageSize="10"
                                 PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true">
                     <Columns>
-                        @* Code column *@
-                        <RadzenDataGridColumn TItem="ProductData" Property="Code" Title="Code" Width="120px">
+                        @* Columna de código *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="Code" Title="Código" Width="120px">
                             <Template Context="data">
                                 <RadzenText TextStyle="TextStyle.Body2" class="rz-color-primary">@data.Code</RadzenText>
                             </Template>
                         </RadzenDataGridColumn>
 
-                        @* CAByS column *@
+                        @* Columna de CAByS *@
                         <RadzenDataGridColumn TItem="ProductData" Property="CabysCode" Title="CAByS" Width="120px">
                             <Template Context="data">
                                 <RadzenBadge BadgeStyle="BadgeStyle.Light" Text="@data.CabysCode" />
                             </Template>
                         </RadzenDataGridColumn>
 
-                        @* Name column *@
-                        <RadzenDataGridColumn TItem="ProductData" Property="Name" Title="Name" />
+                        @* Columna de nombre *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="Name" Title="Nombre" />
 
-                        @* Price column *@
-                        <RadzenDataGridColumn TItem="ProductData" Property="UnitPrice" Title="Price" Width="150px">
+                        @* Columna de precio *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="UnitPrice" Title="Precio" Width="150px">
                             <Template Context="data">
                                 <RadzenText TextStyle="TextStyle.Body2" class="rz-color-secondary-light">
                                     @data.UnitPrice.ToString("₡#,##0.00")
@@ -69,8 +72,8 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        @* Tax column *@
-                        <RadzenDataGridColumn TItem="ProductData" Property="TaxType" Title="Tax" Width="150px">
+                        @* Columna de impuesto *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="TaxType" Title="Impuesto" Width="150px">
                             <Template Context="data">
                                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
                                     <RadzenIcon Icon="percent" />
@@ -81,38 +84,38 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        @* Type column *@
-                        <RadzenDataGridColumn TItem="ProductData" Property="IsService" Title="Type" Width="100px">
+                        @* Columna de tipo *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="IsService" Title="Tipo" Width="100px">
                             <Template Context="data">
                                 <RadzenBadge BadgeStyle="@(data.IsService ? BadgeStyle.Info : BadgeStyle.Secondary)"
-                                             Text="@(data.IsService ? "Service" : "Product")" />
+                                             Text="@(data.IsService ? "Servicio" : "Producto")" />
                             </Template>
                         </RadzenDataGridColumn>
 
-                        @* Status column *@
-                        <RadzenDataGridColumn TItem="ProductData" Property="IsActive" Title="Status" Width="100px">
+                        @* Columna de estado *@
+                        <RadzenDataGridColumn TItem="ProductData" Property="IsActive" Title="Estado" Width="100px">
                             <Template Context="data">
                                 <RadzenBadge BadgeStyle="@(data.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)"
-                                             Text="@(data.IsActive ? "Active" : "Inactive")" />
+                                             Text="@(data.IsActive ? "Activo" : "Inactivo")" />
                             </Template>
                         </RadzenDataGridColumn>
 
-                        @* Actions column *@
-                        <RadzenDataGridColumn TItem="ProductData" Title="Actions" TextAlign="TextAlign.Center" Width="170px">
+                        @* Columna de acciones *@
+                        <RadzenDataGridColumn TItem="ProductData" Title="Acciones" TextAlign="TextAlign.Center" Width="170px">
                             <Template Context="data">
                                 <RadzenButton Icon="edit"
                                               ButtonStyle="ButtonStyle.Light"
                                               Size="ButtonSize.Medium"
                                               Click="@(() => EditProduct(data.Id))"
                                               Class="mx-1"
-                                              ToolTip="Edit Product" />
+                                              ToolTip="Editar Producto" />
 
                                 <RadzenButton Icon="@(data.IsActive ? "cancel" : "check_circle_outline")"
                                               ButtonStyle="@(data.IsActive ? ButtonStyle.Danger : ButtonStyle.Success)"
                                               Size="ButtonSize.Medium"
                                               Click="@(async () => await ToggleProductStatus(data))"
                                               Class="mx-1"
-                                              ToolTip="@(data.IsActive ? "Deactivate" : "Activate")" />
+                                              ToolTip="@(data.IsActive ? "Desactivar" : "Activar")" />
                             </Template>
                         </RadzenDataGridColumn>
                     </Columns>
